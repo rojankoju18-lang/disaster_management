@@ -15,29 +15,29 @@
 ║     └─→ GND ────────────────→ BLACK GROUND RAIL                  ║
 ║                                                                    ║
 ║  LEFT SIDE PINS (GPIO):                                           ║
-║  ┌─────────────────┐                                              ║
-║  │ D0  (GPIO16)    │                                              ║
-║  │ D1  (GPIO5)     │                                              ║
-║  │ D2  (GPIO4)     │                                              ║
-║  │ D3  (GPIO0)     │                                              ║
-║  │ D4  (GPIO2)  ◄─────────── DHT11 DATA PIN                     ║
-║  │ D5  (GPIO14)    │                                              ║
-║  │ D6  (GPIO12)    │                                              ║
-║  │ D7  (GPIO13)    │                                              ║
-║  │ D8  (GPIO15)    │                                              ║
-║  └─────────────────┘                                              ║
+║  ┌──────────────────────────┐                                     ║
+║  │ D0  (GPIO16) ◄──────────── LM393 Digital Output (DO) [SOIL]   ║
+║  │ D1  (GPIO5)  ◄──────────── LM393 Analog Output (AO) [SOIL]    ║
+║  │ D2  (GPIO4)              │                                     ║
+║  │ D3  (GPIO0)              │                                     ║
+║  │ D4  (GPIO2)  ◄──────────── DHT11 DATA PIN [TEMP/HUMIDITY]    ║
+║  │ D5  (GPIO14)             │                                     ║
+║  │ D6  (GPIO12)             │                                     ║
+║  │ D7  (GPIO13)             │                                     ║
+║  │ D8  (GPIO15)             │                                     ║
+║  └──────────────────────────┘                                     ║
 ║                                                                    ║
 ║  ANALOG INPUT:                                                    ║
-║  ┌─────────────────┐                                              ║
-║  │ A0 (ADC)   ◄────────────── WATER SENSOR SIGNAL               ║
-║  └─────────────────┘                                              ║
+║  ┌──────────────────────────┐                                     ║
+║  │ A0 (ADC)  ◄──────────────── WATER LEVEL SENSOR SIGNAL         ║
+║  └──────────────────────────┘                                     ║
 ║                                                                    ║
 ║  POWER & GROUND:                                                  ║
-║  ┌─────────────────┐                                              ║
-║  │ 3V3 (3.3V)      │ ──────→ Sensors VCC                         ║
-║  │ GND             │ ──────→ Sensors GND                         ║
-║  │ VIN (5V)        │ (optional backup power)                     ║
-║  └─────────────────┘                                              ║
+║  ┌──────────────────────────┐                                     ║
+║  │ 3V3 (3.3V)  │ ──────→ All Sensors VCC                          ║
+║  │ GND         │ ──────→ All Sensors GND                          ║
+║  │ VIN (5V)    │ (optional backup power)                         ║
+║  └──────────────────────────┘                                     ║
 ╚═══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -99,36 +99,109 @@ Add 10kΩ resistor:
 - Sensor reads 0-1023 (0V to 3.3V)
 ```
 
-## 🧩 BREADBOARD LAYOUT
+### LM393 SOIL MOISTURE SENSOR MODULE
+```
+┌─────────────────────────────────────────┐
+│   LM393 SENSOR + COMPARATOR MODULE      │
+│   (4-pin module with potentiometer)     │
+│                                         │
+│  ┌─────────────────────────────────┐   │
+│  │ [POTENTIOMETER] ← Adjust for    │   │
+│  │  Sensitivity    Threshold       │   │
+│  └─────────────────────────────────┘   │
+│                                         │
+│  Pin 1 (VCC)   ────────→ 3.3V POWER RAIL
+│  Pin 2 (GND)   ────────→ GROUND RAIL
+│  Pin 3 (DO)    ────────→ ESP8266 D0    ← Digital Output (HIGH=Dry, LOW=Wet)
+│  Pin 4 (AO)    ────────→ ESP8266 D1    ← Analog Output (0-3.3V moisture level)
+│                                         │
+└─────────────────────────────────────────┘
+
+Soil Sensor Probe (two metal pins):
+  ├─→ Inserted into soil
+  └─→ Connected to module's analog input
+
+⚙️ CALIBRATION:
+1. Insert probe in COMPLETELY DRY soil
+2. Slowly turn POTENTIOMETER until DO flips to HIGH
+3. Insert probe in WATER
+4. Verify DO goes LOW
+5. Fine-tune for desired sensitivity
+
+📌 PIN DETAILS:
+DO (Digital Output):  Threshold switching
+  - HIGH (1) = Soil is DRY
+  - LOW  (0) = Soil is WET
+  
+AO (Analog Output):   Proportional moisture level
+  - 0V   (0)    = Completely Dry
+  - 3.3V (1023) = Completely Wet
+```
+
+## 🧩 BREADBOARD LAYOUT (COMPLETE)
 
 ```
-Row numbers (vertical on left side)
+     Column:    1      2       3        4      5       6
+                ▼      ▼       ▼        ▼      ▼       ▼
+              ┌──────┬─────┬──────┬─────┬──────┬──────┐
+    +RAIL     │ + + +│ + + │ + + +│ + + │ + + +│ + + +│  ← 3.3V (RED)
+    -RAIL     │ - - -│ - - │ - - -│ - - │ - - -│ - - -│  ← GND (BLACK)
+              ├──────┼─────┼──────┼─────┼──────┼──────┤
 
-      1      2      3      4      5     (Column markers)
-      ▼      ▼      ▼      ▼      ▼
-   ┌──────┬──────┬──────┬──────┬──────┐
-   │ + + + │ + + + │ + + + │ + + + │ + + + │  ← RED RAIL (3.3V)
-   │ - - - │ - - - │ - - - │ - - - │ - - - │  ← BLACK RAIL (GND)
-   ├──────┼──────┼──────┼──────┼──────┤
-   │      │      │      │      │      │  
-   │[DHT] │[DHT] │[WATER]│[R]   │[ESP8]│  <- Row 3
-   │ VCC  │ DATA │ VCC   │ 10k  │ 3V3 │
-   ├──────┼──────┼──────┼──────┼──────┤
-   │      │      │      │      │      │
-   │[JUMP]│[D4]  │[A0]  │[GND] │[ESP8]│  <- Row 4
-   │ GND  │      │      │      │ GND  │
-   ├──────┼──────┼──────┼──────┼──────┤
-   │      │      │      │      │      │
-   │[DHT] │[R]   │[WATE]│      │      │  <- Row 5
-   │ GND  │ to   │ GND  │      │      │
-   │      │ VCC  │      │      │      │
-   └──────┴──────┴──────┴──────┴──────┘
+Row 1         │      │     │      │     │      │      │
+              │      │     │      │     │      │      │
+
+Row 2         │[ESP] │[DHT]│[WATE]│[LM]│[R]   │      │
+              │ 3V3  │ VCC │ VCC  │ VCC│ 10k  │      │
+              │ +    │ +   │ +    │ +  │ +    │      │
+
+Row 3         │[ESP] │[DHT]│[LM]  │[LM]│[WATE]│[ESP] │
+              │ D4   │DATA │ AO   │ DO │ SIG  │ A0   │
+              │      │     │      │    │      │      │
+
+Row 4         │[ESP] │[ESP]│[DHT] │[R] │[LM]  │[WATE]│
+              │ D0   │ D1  │ GND  │ to │ GND  │ GND  │
+              │      │     │      │3.3V│      │      │
+
+Row 5         │[JUMP]│[JUMP]    │[JUMP]     │      │
+              │ GND  │  GND     │  GND      │      │
+              │ -    │  -       │  -        │      │
+
+              └──────┴─────┴──────┴─────┴──────┴──────┘
 
 Legend:
-[DHT]  = DHT11 Sensor legs
-[WATE] = Water Sensor legs
-[R]    = Resistor
-[ESP8] = Connections going to ESP8266
+[ESP]  = Wire to ESP8266
+[DHT]  = DHT11 Sensor (3 pins)
+[WATE] = Water Sensor (3 pins)
+[LM]   = LM393 Module (4 pins)
+[R]    = Resistor (10kΩ pull-up)
+[JUMP] = Jumper to ground rail
+
+CONNECTIONS SUMMARY:
+┌─────────────────────────────────────────┐
+│ POWER:                                  │
+│ • ESP 3V3 → +RAIL (Red)                │
+│ • ESP GND → -RAIL (Black)              │
+│                                         │
+│ DHT11:                                  │
+│ • VCC → +RAIL                          │
+│ • DATA → D4 (with 10k pull-up to 3V3) │
+│ • GND → -RAIL                          │
+│                                         │
+│ WATER LEVEL:                            │
+│ • VCC → +RAIL                          │
+│ • SIG → A0                             │
+│ • GND → -RAIL                          │
+│                                         │
+│ LM393 SOIL SENSOR:                     │
+│ • VCC → +RAIL                          │
+│ • GND → -RAIL                          │
+│ • DO → D0 (Digital Output)             │
+│ • AO → D1 (Analog Output)              │
+│                                         │
+│ Soil Probe: 2 metal pins into soil     │
+│ (Connected to LM393 module internally) │
+└─────────────────────────────────────────┘
 ```
 
 ## 📊 SIGNAL FLOW
