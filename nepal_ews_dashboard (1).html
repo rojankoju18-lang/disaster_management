@@ -485,11 +485,12 @@
   /* ── STATS ROW ── */
   .stats-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 10px;
     margin-bottom: 12px;
   }
 
+  @media (max-width: 900px) { .stats-row { grid-template-columns: repeat(3,1fr); } }
   @media (max-width: 700px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
 
   .stat-card {
@@ -682,28 +683,6 @@
 
   .chart-canvas { width: 100%; height: 100px; display: block; }
 
-  .humidity-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 12px;
-    font-size: 12px;
-    color: #c7e8ff;
-  }
-  .humidity-table th,
-  .humidity-table td {
-    padding: 10px 12px;
-    border: 1px solid rgba(255,255,255,0.08);
-    text-align: left;
-  }
-  .humidity-table th {
-    background: rgba(14, 37, 64, 0.9);
-    color: #8efcff;
-    font-weight: 600;
-  }
-  .humidity-table td span {
-    font-family: 'Share Tech Mono', monospace;
-  }
-
   /* ── MINI SIREN ── */
   .siren-indicator {
     display: flex; align-items: center; gap: 6px;
@@ -820,6 +799,11 @@
         <div class="stat-val" id="statAlerts">0</div>
         <div class="stat-label">ALERTS TODAY</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color:#44ddff"><i class="fas fa-tint"></i></div>
+        <div class="stat-val" id="statHumidity" style="color:#44ddff;">—</div>
+        <div class="stat-label">HUMIDITY (%)</div>
+      </div>
     </div>
   </div>
 
@@ -852,25 +836,12 @@
             <div class="gauge-label">RSSI (dBm)</div>
             <canvas class="sparkline-canvas" id="sparkRSSI"></canvas>
           </div>
-        </div>
-        <div class="config-panel" style="margin-top: 14px; padding: 12px 14px;">
-          <div class="section-label" style="margin-bottom:10px;"><i class="fas fa-tint" style="color:#4dc7ff"></i> HUMIDITY DATA TABLE</div>
-          <table class="humidity-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Value</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Relative Humidity</td>
-                <td><span id="humValue">—</span> %</td>
-                <td><span id="humStatus">UNKNOWN</span></td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="gauge-box">
+            <div class="gauge-icon" style="color:#44ddff"><i class="fas fa-tint"></i></div>
+            <div class="gauge-val" id="gaugeHumidity" style="color:#44ddff">—</div>
+            <div class="gauge-label">HUMIDITY (%)</div>
+            <canvas class="sparkline-canvas" id="sparkHumidity"></canvas>
+          </div>
         </div>
       </div>
 
@@ -916,6 +887,17 @@
           </div>
           <div class="bar-wrap">
             <div class="bar-fill" id="t1sbar" style="width:0%;background:var(--neon-amber);"></div>
+          </div>
+
+          <div class="metric-row" style="margin-top:8px;">
+            <div class="metric-label"><i class="fas fa-tint"></i> HUMIDITY</div>
+            <div>
+              <span class="metric-value" id="t1humid" style="color:#44ddff;">—</span>
+              <span class="metric-unit">%</span>
+            </div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-fill" id="t1hbar" style="width:0%;background:#44ddff;"></div>
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
@@ -1238,12 +1220,11 @@
 
 <script>
 // ═══════════════════════════════════════════════
-// CONFIG — Edit this IP to match your ESP8266
+// CONFIG — Edit this URL to match your Flask server
 // ═══════════════════════════════════════════════
-const ESP_BASE_IP = "192.168.1.100";
-const ESP_ENDPOINT = "/data";
+const DATA_SERVER_BASE_URL = "http://10.12.4.32:5000";
+const DATA_ENDPOINT = "/latest";
 
-let currentIP = ESP_BASE_IP;
 let alertCount = 0;
 let inAlertState = false;
 let audioCtx = null;
@@ -1256,6 +1237,7 @@ const LANDSLIDE_THRESHOLD_DEFAULT = 50;
 const waterHistory = [];
 const soilHistory  = [];
 const rssiHistory  = [];
+const humidHistory = [];
 const MAX_HISTORY  = 60;
 
 // ═══════════════════════════════════════════════
@@ -1419,6 +1401,7 @@ function drawHistoryChart() {
 
   drawLine(waterHistory, '#00cfff', 8, 'Water');
   drawLine(soilHistory.map(v => v/10), '#ffb300', 10, 'Soil');
+  drawLine(humidHistory.map(v => v/10), '#44ddff', 10, 'Humid');
 
   // Labels
   ctx.font = '9px Share Tech Mono, monospace';
@@ -1426,6 +1409,8 @@ function drawHistoryChart() {
   ctx.fillText('── WATER LEVEL (m)', 8, H - 6);
   ctx.fillStyle = '#ffb30088';
   ctx.fillText('── SOIL MOISTURE (%÷10)', 8 + 140, H - 6);
+  ctx.fillStyle = '#44ddff88';
+  ctx.fillText('── HUMIDITY (%÷10)', 8 + 300, H - 6);
 }
 
 // ═══════════════════════════════════════════════
@@ -1439,32 +1424,41 @@ function getLandslideThreshold() {
 }
 
 async function fetchESP8266() {
-  const url = `http://${currentIP}${ESP_ENDPOINT}`;
+  const url = `${DATA_SERVER_BASE_URL}${DATA_ENDPOINT}`;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(1500) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    handleData(data.waterLevel, data.soilMoisture, data.temperature, data.humidity, data.rssi);
+    handleData(data.water_level, data.soil_moisture, data.humidity);
     setNetworkStatus(true);
-    termLog('[API] Sensor data loaded from ESP8266', 'success', 0);
   } catch (e) {
     setNetworkStatus(false);
-    termLog(`[ERROR] Failed to read ESP8266 data: ${e.message}`, 'warn', 0);
+    // Demo fallback: simulate realistic data
+    simulateData();
   }
 }
 
-function handleData(waterLevel, soilMoisture, temperature, humidity, rssi) {
+// Simulated demo data when ESP not reachable
+let simTime = 0;
+function simulateData() {
+  simTime += 0.05;
+  const water = parseFloat((2.2 + Math.sin(simTime * 0.3) * 0.6 + Math.random() * 0.15).toFixed(2));
+  const soil  = Math.round(72 + Math.sin(simTime * 0.2) * 12 + (Math.random() - 0.5) * 4);
+  const humid = Math.round(78 + Math.sin(simTime * 0.15) * 10 + (Math.random() - 0.5) * 3);
+  handleData(water, soil, humid);
+}
+
+function handleData(waterLevel, soilMoisture, humidity) {
   const wl = parseFloat(waterLevel);
   const sm = parseFloat(soilMoisture);
-  const hum = parseFloat(humidity);
-  const rssiValue = parseInt(rssi, 10);
+  const hm = parseFloat(humidity) || Math.round(78 + (Math.random()-0.5)*6);
 
   // History
   waterHistory.push(wl); if (waterHistory.length > MAX_HISTORY) waterHistory.shift();
   soilHistory.push(sm);  if (soilHistory.length > MAX_HISTORY) soilHistory.shift();
-  if (!isNaN(rssiValue)) {
-    rssiHistory.push(Math.abs(rssiValue)); if (rssiHistory.length > MAX_HISTORY) rssiHistory.shift();
-  }
+  humidHistory.push(hm); if (humidHistory.length > MAX_HISTORY) humidHistory.shift();
+  const rssi = -67 + Math.round((Math.random()-0.5)*6);
+  rssiHistory.push(Math.abs(rssi)); if (rssiHistory.length > MAX_HISTORY) rssiHistory.shift();
 
   // Live gauges
   const FLOOD_T = getFloodThreshold();
@@ -1477,22 +1471,20 @@ function handleData(waterLevel, soilMoisture, temperature, humidity, rssi) {
   document.getElementById('gaugeWater').style.color = wColor;
   document.getElementById('gaugeSoil').textContent = sm.toFixed(0);
   document.getElementById('gaugeSoil').style.color  = sColor;
-  if (!isNaN(rssiValue)) {
-    document.getElementById('gaugeRSSI').textContent = rssiValue;
-  }
+  document.getElementById('gaugeRSSI').textContent = rssi;
 
-  // Humidity table
-  if (!isNaN(hum)) {
-    const humidityStatus = hum < 30 ? 'DRY' : hum <= 60 ? 'NORMAL' : 'HIGH';
-    document.getElementById('humValue').textContent = hum.toFixed(0);
-    document.getElementById('humStatus').textContent = humidityStatus;
-  }
+  // Humidity gauge
+  const hmColor = hm > 90 ? 'var(--neon-red)' : hm > 80 ? 'var(--neon-amber)' : '#44ddff';
+  document.getElementById('gaugeHumidity').textContent = hm.toFixed(0);
+  document.getElementById('gaugeHumidity').style.color = hmColor;
 
   // Stats row
   document.getElementById('statWater').textContent = wl.toFixed(2);
   document.getElementById('statWater').style.color = wColor;
   document.getElementById('statSoil').textContent = sm;
   document.getElementById('statSoil').style.color = sColor;
+  document.getElementById('statHumidity').textContent = hm.toFixed(0);
+  document.getElementById('statHumidity').style.color = hmColor;
 
   // Tower T01 (water)
   const wPct = Math.min(100, (wl / 8) * 100);
@@ -1503,9 +1495,15 @@ function handleData(waterLevel, soilMoisture, temperature, humidity, rssi) {
   document.getElementById('t1soil').textContent = sm.toFixed(0);
   document.getElementById('t1sbar').style.width = sm + '%';
 
+  // Tower T01 humidity
+  document.getElementById('t1humid').textContent = hm.toFixed(0);
+  document.getElementById('t1humid').style.color = hmColor;
+  document.getElementById('t1hbar').style.width = hm + '%';
+  document.getElementById('t1hbar').style.background = hmColor;
+
   // Tower T02 (derived)
-  const flow = parseFloat((wl * 3.2).toFixed(1));
-  const turb = Math.round(15 + wl * 8);
+  const flow = parseFloat((wl * 3.2 + Math.random()*0.5).toFixed(1));
+  const turb = Math.round(15 + wl * 8 + Math.random()*5);
   document.getElementById('t2flow').textContent = flow;
   document.getElementById('t2flow').className = `metric-value ${flow > 18 ? 'crit' : flow > 12 ? 'warn' : ''}`;
   document.getElementById('t2fbar').style.width = Math.min(100, flow / 25 * 100) + '%';
@@ -1541,6 +1539,7 @@ function handleData(waterLevel, soilMoisture, temperature, humidity, rssi) {
   drawSparkline('sparkWater', waterHistory, '#00cfff', 8);
   drawSparkline('sparkSoil',  soilHistory.map(v=>v/100), '#ffb300', 1);
   drawSparkline('sparkRSSI',  rssiHistory, '#cc44ff', 100);
+  drawSparkline('sparkHumidity', humidHistory, '#44ddff', 100);
   drawHistoryChart();
 
   // ── ALERT EVALUATION ──
@@ -1591,7 +1590,7 @@ function setNetworkStatus(online) {
   } else {
     dot.style.background = 'var(--neon-amber)';
     dot.style.boxShadow  = '0 0 8px var(--neon-amber)';
-    txt.textContent = 'OFFLINE';
+    txt.textContent = 'DEMO MODE';
     txt.style.color = 'var(--neon-amber)';
   }
 }
@@ -1616,7 +1615,7 @@ function triggerEmergency(wl, sm, isFlood, isLandslide) {
 
   // Terminal logs
   termLog('[CRITICAL] ⚠ THRESHOLD BREACHED AT HARDWARE NODE', 'crit', 0);
-  termLog(`[SENSOR] Water Level: ${wl.toFixed(2)}m | Soil Moisture: ${sm}%`, 'crit', 500);
+  termLog(`[SENSOR] Water Level: ${wl.toFixed(2)}m | Soil Moisture: ${sm}% | Humidity: ${humidHistory[humidHistory.length-1]||'—'}%`, 'crit', 500);
   termLog(`[HAZARD] Predicted event: ${hazardType}`, 'crit', 1000);
   termLog('[GPS LINKED] Extracting localized telemetry...', 'gps', 1500);
   termLog('[GPS] Roshi River Basin · 27.6588°N 85.5209°E · ALT: 847m', 'gps', 2000);
@@ -1639,7 +1638,7 @@ function triggerEmergency(wl, sm, isFlood, isLandslide) {
   sub.textContent = `${hazardType} · Roshi River Basin`;
   detail.innerHTML = `
     [NODE] Hardware threshold breached · ${new Date().toLocaleTimeString()}<br>
-    [DATA] Water Level: ${wl.toFixed(2)} m | Soil Moisture: ${sm}%<br>
+    [DATA] Water Level: ${wl.toFixed(2)} m | Soil Moisture: ${sm}% | Humidity: ${humidHistory[humidHistory.length-1]||'—'}%<br>
     [GPS]  27.6588° N, 85.5209° E · Roshi River Corridor<br>
     [API]  SOS dispatched → Nepal Emergency Rescue Gateway<br>
     [APF]  Nepal Army + Armed Police Force alerted<br>

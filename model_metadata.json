@@ -1,0 +1,48 @@
+{
+  "features": [
+    "rainfall_mm_hr",
+    "rain_30min_avg",
+    "rain_1hr_avg",
+    "rain_3hr_sum",
+    "water_level_m",
+    "water_1hr_avg",
+    "water_rise_1hr",
+    "water_rise_30min",
+    "water_rise_rate",
+    "soil_moisture_pct",
+    "soil_trend",
+    "temperature_c",
+    "humidity_pct",
+    "flow_rate_m3s",
+    "turbidity_ntu",
+    "month",
+    "hour"
+  ],
+  "classes": [
+    "CRITICAL",
+    "ELEVATED",
+    "HIGH",
+    "NORMAL"
+  ],
+  "accuracy": 0.9763,
+  "predict_horizon_minutes": 45,
+  "n_estimators": 150,
+  "training_rows": 41464,
+  "thresholds": {
+    "CRITICAL": {
+      "water_level_m": 4.5,
+      "soil_moisture_pct": 88,
+      "rainfall_mm_hr": 30
+    },
+    "HIGH": {
+      "water_level_m": 3.0,
+      "soil_moisture_pct": 78,
+      "rainfall_mm_hr": 15
+    },
+    "ELEVATED": {
+      "water_level_m": 2.0,
+      "soil_moisture_pct": 65,
+      "rainfall_mm_hr": 5
+    }
+  }
+}
