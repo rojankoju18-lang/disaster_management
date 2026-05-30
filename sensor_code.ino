@@ -132,21 +132,27 @@ void setupWebServer() {
 
 // Read water level sensor (analog)
 float readWaterLevel() {
-  int rawValue = analogRead(WATER_LEVEL_PIN);
-  
+  int rawValue = 0;
+  const int samples = 8;
+  for (int i = 0; i < samples; i++) {
+    rawValue += analogRead(WATER_LEVEL_PIN);
+    delay(10);
+  }
+  rawValue /= samples;
+
   // Convert analog reading to water height (0-8 meters)
   // Calibration: DRY_VALUE = 0m, WET_VALUE = 8m
   float percentage = (float)(DRY_VALUE - rawValue) / (DRY_VALUE - WET_VALUE);
-  percentage = constrain(percentage, 0.0, 1.0);  // Limit to 0-100%
-  
+  percentage = constrain(percentage, 0.0, 1.0);
+
   float height = percentage * MAX_WATER_HEIGHT;
-  
-  Serial.print("[WATER] Raw ADC: ");
+
+  Serial.print("[WATER] Raw ADC (avg): ");
   Serial.print(rawValue);
   Serial.print(" → Height: ");
   Serial.print(height, 2);
   Serial.println("m");
-  
+
   return height;
 }
 
@@ -179,31 +185,23 @@ float readSoilMoisture() {
   // simulate an analog range based on the digital threshold.
   
   int digitalValue = digitalRead(SOIL_SENSOR_DO_PIN);  // Digital threshold detection
-  
-  // Read "analog" value (simulated using ADC through another method if available)
-  // For pure LM393 module with only DO pin, we use digital + estimation
-  // If your module has AO pin connected, you can read it here:
-  // int analogRaw = analogRead(SOIL_SENSOR_AO_PIN);  // Uncomment if AO is used
-  
+
   // LM393 Digital Output (DO pin):
-  // LOW (0) = Moisture detected (soil is WET) 
+  // LOW (0) = Moisture detected (soil is WET)
   // HIGH (1) = No moisture (soil is DRY)
   
-  // For more accurate readings, we estimate based on digital threshold + hysteresis
-  static float lastMoisture = 50.0;  // Memory of last reading for smooth transitions
-  
+  // Use deterministic values instead of random simulation.
+  // If your module supports AO and is wired to an analog pin, you can replace this with analogRead().
+  static float lastMoisture = 50.0;
+  float targetMoisture = (digitalValue == LOW) ? 85.0 : 15.0;
+
   if (digitalValue == LOW) {
-    // Soil is wet - set moisture to high range (60-100%)
-    soilMoisture = 75.0 + (rand() % 25);  // Add randomness for realistic variation
     Serial.print("[SOIL] DO: LOW  (WET) → ");
   } else {
-    // Soil is dry - set moisture to low range (0-40%)
-    soilMoisture = 20.0 + (rand() % 20);  // Add randomness for realistic variation
     Serial.print("[SOIL] DO: HIGH (DRY) → ");
   }
-  
-  // Smooth transitions to avoid erratic jumps
-  soilMoisture = (soilMoisture * 0.6) + (lastMoisture * 0.4);
+
+  soilMoisture = (targetMoisture * 0.75) + (lastMoisture * 0.25);
   lastMoisture = soilMoisture;
   
   Serial.print("Moisture: ");
