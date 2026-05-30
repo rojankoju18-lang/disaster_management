@@ -11,11 +11,14 @@ const char* password = "";   // Change to your WiFi password
 // ═══════════════════════════════════════════════
 // SENSOR PIN CONFIGURATION
 // ═══════════════════════════════════════════════
+// DHT11: VCC = 3.3V, GND = G, DATA = D4
 #define DHT_PIN D4              // DHT11 data pin (GPIO2)
 #define DHTTYPE DHT11           // DHT 11 sensor type
-#define WATER_LEVEL_PIN A0      // Water level sensor (Analog pin - A0)
-#define SOIL_SENSOR_DO_PIN D0   // LM393 soil moisture digital output (GPIO16) - threshold switch
-#define SOIL_SENSOR_AO_PIN D1   // LM393 soil moisture analog output simulator (GPIO5) - actual moisture reading
+// Water level sensor: AO = A0, VCC = 3.3V, GND = G
+#define WATER_LEVEL_PIN A0      // Water level sensor (Analog input A0)
+// LM393 soil moisture sensor wiring: VCC = 3.3V, GND = G, DO = D0, AO = D1
+#define SOIL_SENSOR_DO_PIN D0   // LM393 soil moisture digital output (DO)
+#define SOIL_SENSOR_AO_PIN D1   // LM393 analog output (AO) - D1 is digital-only on ESP8266, so DO threshold is used here
 
 DHT dht(DHT_PIN, DHTTYPE);
 ESP8266WebServer server(80);

@@ -682,28 +682,6 @@
 
   .chart-canvas { width: 100%; height: 100px; display: block; }
 
-  .humidity-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 12px;
-    font-size: 12px;
-    color: #c7e8ff;
-  }
-  .humidity-table th,
-  .humidity-table td {
-    padding: 10px 12px;
-    border: 1px solid rgba(255,255,255,0.08);
-    text-align: left;
-  }
-  .humidity-table th {
-    background: rgba(14, 37, 64, 0.9);
-    color: #8efcff;
-    font-weight: 600;
-  }
-  .humidity-table td span {
-    font-family: 'Share Tech Mono', monospace;
-  }
-
   /* ── MINI SIREN ── */
   .siren-indicator {
     display: flex; align-items: center; gap: 6px;
@@ -852,25 +830,6 @@
             <div class="gauge-label">RSSI (dBm)</div>
             <canvas class="sparkline-canvas" id="sparkRSSI"></canvas>
           </div>
-        </div>
-        <div class="config-panel" style="margin-top: 14px; padding: 12px 14px;">
-          <div class="section-label" style="margin-bottom:10px;"><i class="fas fa-tint" style="color:#4dc7ff"></i> HUMIDITY DATA TABLE</div>
-          <table class="humidity-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Value</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Relative Humidity</td>
-                <td><span id="humValue">—</span> %</td>
-                <td><span id="humStatus">UNKNOWN</span></td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
 
@@ -1441,15 +1400,15 @@ function getLandslideThreshold() {
 async function fetchESP8266() {
   const url = `http://${currentIP}${ESP_ENDPOINT}`;
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(1500) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    // ESP8266 sends camelCase: waterLevel, soilMoisture, temperature, humidity, rssi
     handleData(data.waterLevel, data.soilMoisture, data.temperature, data.humidity, data.rssi);
     setNetworkStatus(true);
-    termLog('[API] Sensor data loaded from ESP8266', 'success', 0);
   } catch (e) {
     setNetworkStatus(false);
-    termLog(`[ERROR] Failed to read ESP8266 data: ${e.message}`, 'warn', 0);
+    termLog(`[ERROR] Failed to fetch sensor data: ${e.message}`, 'warn', 0);
   }
 }
 
@@ -1457,13 +1416,13 @@ function handleData(waterLevel, soilMoisture, temperature, humidity, rssi) {
   const wl = parseFloat(waterLevel);
   const sm = parseFloat(soilMoisture);
   const hum = parseFloat(humidity);
-  const rssiValue = parseInt(rssi, 10);
+  const rssiVal = (rssi != null && !isNaN(rssi)) ? Math.round(rssi) : null;
 
   // History
   waterHistory.push(wl); if (waterHistory.length > MAX_HISTORY) waterHistory.shift();
   soilHistory.push(sm);  if (soilHistory.length > MAX_HISTORY) soilHistory.shift();
-  if (!isNaN(rssiValue)) {
-    rssiHistory.push(Math.abs(rssiValue)); if (rssiHistory.length > MAX_HISTORY) rssiHistory.shift();
+  if (rssiVal !== null) {
+    rssiHistory.push(Math.abs(rssiVal)); if (rssiHistory.length > MAX_HISTORY) rssiHistory.shift();
   }
 
   // Live gauges
@@ -1477,15 +1436,16 @@ function handleData(waterLevel, soilMoisture, temperature, humidity, rssi) {
   document.getElementById('gaugeWater').style.color = wColor;
   document.getElementById('gaugeSoil').textContent = sm.toFixed(0);
   document.getElementById('gaugeSoil').style.color  = sColor;
-  if (!isNaN(rssiValue)) {
-    document.getElementById('gaugeRSSI').textContent = rssiValue;
-  }
+  document.getElementById('gaugeRSSI').textContent = rssiVal !== null ? rssiVal : '—';
 
-  // Humidity table
-  if (!isNaN(hum)) {
-    const humidityStatus = hum < 30 ? 'DRY' : hum <= 60 ? 'NORMAL' : 'HIGH';
-    document.getElementById('humValue').textContent = hum.toFixed(0);
-    document.getElementById('humStatus').textContent = humidityStatus;
+  // Show real temperature & humidity if available
+  if (temperature != null && !isNaN(temperature)) {
+    const tempEl = document.getElementById('gaugeTemp');
+    if (tempEl) { tempEl.textContent = parseFloat(temperature).toFixed(1); }
+  }
+  if (humidity != null && !isNaN(humidity)) {
+    const humEl = document.getElementById('gaugeHumidity');
+    if (humEl) { humEl.textContent = parseFloat(humidity).toFixed(0); }
   }
 
   // Stats row
@@ -1591,7 +1551,7 @@ function setNetworkStatus(online) {
   } else {
     dot.style.background = 'var(--neon-amber)';
     dot.style.boxShadow  = '0 0 8px var(--neon-amber)';
-    txt.textContent = 'OFFLINE';
+    txt.textContent = 'DEMO MODE';
     txt.style.color = 'var(--neon-amber)';
   }
 }
