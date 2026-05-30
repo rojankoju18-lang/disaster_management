@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nepal EWS - Circuit Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section h2 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .mermaid-container {
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        
+        .diagram-label {
+            background: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .component-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .component-table th,
+        .component-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        .component-table th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .component-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .component-table tr:hover {
+            background: #e8f0ff;
+        }
+        
+        .legend {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .legend h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .legend ul {
+            margin-left: 20px;
+        }
+        
+        .legend li {
+            margin: 5px 0;
+            color: #856404;
+        }
+        
+        .pin-color {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        .red { background: #ff2244; }
+        .black { background: #333; }
+        .yellow { background: #ffb300; }
+        .green { background: #00ff88; }
+        .blue { background: #00cfff; }
+        
+        .tips {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .tips h3 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+        
+        .tips ul {
+            margin-left: 20px;
+        }
+        
+        .tips li {
+            margin: 5px 0;
+            color: #0c5460;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #ddd;
+            color: #666;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔌 Nepal EWS - Circuit Diagram</h1>
+            <p>Complete wiring schematic for IoT flood & landslide detection system</p>
+        </div>
+        
+        <div class="content">
+            <!-- SECTION 1: Block Diagram -->
+            <div class="section">
+                <h2>System Architecture</h2>
+                <div class="diagram-label">Block Diagram</div>
+                <div class="mermaid-container">
+                    <div class="mermaid">
+                        graph LR
+                            A["🌊 Water<br/>Level Sensor<br/>(Analog)"] -->|A0| B["ESP8266<br/>LoLin Board<br/>(Brain)"]
+                            C["🌡️ DHT11<br/>Temperature<br/>& Humidity<br/>(Digital)"] -->|D4| B
+                            B -->|3.3V| A
+                            B -->|3.3V| C
+                            B -->|WiFi| D["📡 WiFi<br/>Router"]
+                            D -->|JSON Data| E["💻 Browser<br/>Dashboard"]
+                            E -->|Real-time<br/>Visualization| F["📊 Neon<br/>Dashboard"]
+                            
+                            style A fill:#ffcccc
+                            style C fill:#ffffcc
+                            style B fill:#ccffcc
+                            style D fill:#ccccff
+                            style E fill:#ffccff
+                            style F fill:#ccffff
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SECTION 2: Pin Connection Diagram -->
+            <div class="section">
+                <h2>ESP8266 Pin Configuration</h2>
+                <div class="diagram-label">GPIO Pin Mapping</div>
+                <div class="mermaid-container">
+                    <div class="mermaid">
+                        graph TB
+                            subgraph ESP8266["⚡ ESP8266 LoLin Board"]
+                                P1["3V3<br/>(3.3V Power)"]
+                                P2["GND<br/>(Ground)"]
+                                P3["D4 GPIO2<br/>(DHT11 Data)"]
+                                P4["A0<br/>(Water Sensor)"]
+                                P5["VIN<br/>(5V Input)"]
+                            end
+                            
+                            subgraph DHT["🌡️ DHT11 Sensor"]
+                                D1["VCC<br/>(Power)"]
+                                D2["DATA<br/>(Signal)"]
+                                D3["GND<br/>(Ground)"]
+                            end
+                            
+                            subgraph Water["🌊 Water Level Sensor"]
+                                W1["VCC<br/>(Power)"]
+                                W2["GND<br/>(Ground)"]
+                                W3["Signal<br/>(Analog)"]
+                            end
+                            
+                            P1 -->|Red Wire| D1
+                            P1 -->|Red Wire| W1
+                            P2 -->|Black Wire| D3
+                            P2 -->|Black Wire| W2
+                            P3 -->|Yellow Wire| D2
+                            P4 -->|Green Wire| W3
+                            
+                            style P1 fill:#ffcccc
+                            style P2 fill:#333333,color:#fff
+                            style P3 fill:#ffffcc
+                            style P4 fill:#ccffcc
+                            style D1 fill:#ffcccc
+                            style D2 fill:#ffffcc
+                            style D3 fill:#333333,color:#fff
+                            style W1 fill:#ffcccc
+                            style W2 fill:#333333,color:#fff
+                            style W3 fill:#ccffcc
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SECTION 3: Detailed Circuit -->
+            <div class="section">
+                <h2>Complete Circuit Schematic</h2>
+                <div class="diagram-label">Full Wiring Diagram</div>
+                <div class="mermaid-container">
+                    <div class="mermaid">
+                        graph TB
+                            subgraph Power["⚡ POWER DISTRIBUTION"]
+                                USB["USB 5V<br/>(From Computer)"]
+                                REG["Voltage<br/>Regulator<br/>5V → 3.3V"]
+                                POS["🔴 POSITIVE<br/>3.3V Rail<br/>(Red)"]
+                                NEG["⚫ NEGATIVE<br/>GND Rail<br/>(Black)"]
+                            end
+                            
+                            subgraph GPIO["🎛️ GPIO CONNECTIONS"]
+                                ESP["ESP8266<br/>LoLin"]
+                                D4["D4<br/>GPIO2"]
+                                A0["A0<br/>Analog"]
+                            end
+                            
+                            subgraph Sensors["📡 SENSOR CONNECTIONS"]
+                                DHT["DHT11 Sensor<br/>(Temp & Humidity)<br/>2-sec Updates"]
+                                WATER["Water Level Sensor<br/>(Analog Depth)<br/>Continuous"]
+                                RES["10kΩ Pull-up<br/>Resistor<br/>(Data Stability)"]
+                            end
+                            
+                            USB --> REG
+                            REG --> POS
+                            REG --> NEG
+                            
+                            ESP --> D4
+                            ESP --> A0
+                            
+                            POS --> DHT
+                            NEG --> DHT
+                            D4 --> DHT
+                            D4 --> RES
+                            RES --> POS
+                            
+                            POS --> WATER
+                            NEG --> WATER
+                            A0 --> WATER
+                            
+                            ESP -.->|WiFi| INTERNET["📡 WiFi<br/>Router"]
+                            INTERNET -.->|JSON| DASH["💻 Browser<br/>Dashboard"]
+                            
+                            style USB fill:#ff9999
+                            style REG fill:#ffcc99
+                            style POS fill:#ff6666
+                            style NEG fill:#333333,color:#fff
+                            style ESP fill:#99ff99
+                            style D4 fill:#ffff99
+                            style A0 fill:#99ff99
+                            style DHT fill:#ffffcc
+                            style WATER fill:#ccffff
+                            style RES fill:#ffccff
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SECTION 4: Component Table -->
+            <div class="section">
+                <h2>Component Connections Summary</h2>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Pin Name</th>
+                            <th>ESP8266 Pin</th>
+                            <th>Wire Color</th>
+                            <th>Function</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>DHT11</td>
+                            <td>VCC (1)</td>
+                            <td>3V3</td>
+                            <td><span class="pin-color red"></span>Red</td>
+                            <td>Power Supply (3.3V)</td>
+                        </tr>
+                        <tr>
+                            <td>DHT11</td>
+                            <td>DATA (2)</td>
+                            <td>D4 (GPIO2)</td>
+                            <td><span class="pin-color yellow"></span>Yellow</td>
+                            <td>Temperature & Humidity Data</td>
+                        </tr>
+                        <tr>
+                            <td>DHT11</td>
+                            <td>GND (3)</td>
+                            <td>GND</td>
+                            <td><span class="pin-color black"></span>Black</td>
+                            <td>Ground Reference</td>
+                        </tr>
+                        <tr>
+                            <td>Resistor</td>
+                            <td>10kΩ (Pull-up)</td>
+                            <td>D4 ↔ 3V3</td>
+                            <td><span class="pin-color red"></span>Any</td>
+                            <td>Signal Stability (DHT Data)</td>
+                        </tr>
+                        <tr>
+                            <td>Water Sensor</td>
+                            <td>VCC</td>
+                            <td>3V3</td>
+                            <td><span class="pin-color red"></span>Red</td>
+                            <td>Power Supply (3.3V)</td>
+                        </tr>
+                        <tr>
+                            <td>Water Sensor</td>
+                            <td>GND</td>
+                            <td>GND</td>
+                            <td><span class="pin-color black"></span>Black</td>
+                            <td>Ground Reference</td>
+                        </tr>
+                        <tr>
+                            <td>Water Sensor</td>
+                            <td>Signal</td>
+                            <td>A0 (ADC)</td>
+                            <td><span class="pin-color green"></span>Green</td>
+                            <td>Water Level (Analog 0-1023)</td>
+                        </tr>
+                        <tr>
+                            <td>USB Cable</td>
+                            <td>5V</td>
+                            <td>VIN or USB</td>
+                            <td><span class="pin-color red"></span>Red</td>
+                            <td>Power Input for Regulator</td>
+                        </tr>
+                        <tr>
+                            <td>USB Cable</td>
+                            <td>GND</td>
+                            <td>GND</td>
+                            <td><span class="pin-color black"></span>Black</td>
+                            <td>Ground Return</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- SECTION 5: Power Distribution -->
+            <div class="section">
+                <h2>Power Distribution Network</h2>
+                <div class="diagram-label">Voltage & Current Flow</div>
+                <div class="mermaid-container">
+                    <div class="mermaid">
+                        graph LR
+                            A["USB Cable<br/>5V @ 500mA"] -->|Through| B["Voltage<br/>Regulator<br/>LDO"]
+                            B -->|3.3V<br/>400mA| C["Red Power<br/>Rail"]
+                            C -->|100mA| D["ESP8266"]
+                            C -->|20mA| E["DHT11"]
+                            C -->|50mA| F["Water Sensor"]
+                            C -->|10mA| G["10kΩ<br/>Resistor"]
+                            H["GND<br/>Cable"] -->|Return<br/>Path| I["Black<br/>Ground<br/>Rail"]
+                            I --> D
+                            I --> E
+                            I --> F
+                            
+                            style A fill:#ff6666
+                            style B fill:#ffcc99
+                            style C fill:#ff9999
+                            style I fill:#333333,color:#fff
+                            style D fill:#99ff99
+                            style E fill:#ffffcc
+                            style F fill:#ccffff
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <h3>⚡ Power Specifications:</h3>
+                    <ul>
+                        <li><strong>Input:</strong> USB 5V @ 500mA</li>
+                        <li><strong>Regulated Output:</strong> 3.3V @ 400mA</li>
+                        <li><strong>ESP8266 Consumption:</strong> 100-150mA</li>
+                        <li><strong>DHT11 Consumption:</strong> 10-20mA</li>
+                        <li><strong>Water Sensor Consumption:</strong> 30-50mA</li>
+                        <li><strong>Total System:</strong> ~180mA (Safe with USB power)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- SECTION 6: Breadboard Layout -->
+            <div class="section">
+                <h2>Breadboard Physical Layout</h2>
+                <div class="diagram-label">Component Placement</div>
+                <div class="mermaid-container">
+                    <div class="mermaid">
+                        graph TB
+                            subgraph BRD["BREADBOARD LAYOUT (Top View)"]
+                                direction LR
+                                subgraph R["Row 1 - Power Rails"]
+                                    P1["🔴 Positive<br/>3.3V"]
+                                    P2["Connected<br/>All Down"]
+                                    P3["💡 LED<br/>Optional"]
+                                end
+                                
+                                subgraph G["Row 2 - Ground Rails"]
+                                    G1["⚫ Negative<br/>GND"]
+                                    G2["Connected<br/>All Down"]
+                                    G3["Reference<br/>GND"]
+                                end
+                                
+                                subgraph C["Rows 3-8 - Components"]
+                                    C1["DHT11<br/>4 Pins"]
+                                    C2["Resistor<br/>10kΩ"]
+                                    C3["Water<br/>Sensor"]
+                                    C4["Jumper<br/>Wires"]
+                                end
+                                
+                                subgraph E["Right Side - ESP8266"]
+                                    E1["3V3 ← Pin"]
+                                    E2["GND ← Pin"]
+                                    E3["D4 ← Pin"]
+                                    E4["A0 ← Pin"]
+                                end
+                            end
+                            
+                            style P1 fill:#ff6666,color:#fff
+                            style G1 fill:#333333,color:#fff
+                            style C1 fill:#ffffcc
+                            style C2 fill:#ffccff
+                            style C3 fill:#ccffff
+                            style E1 fill:#ff9999
+                            style E2 fill:#666666,color:#fff
+                            style E3 fill:#ffff99
+                            style E4 fill:#99ff99
+                    </div>
+                </div>
+                
+                <div class="tips">
+                    <h3>💡 Assembly Tips:</h3>
+                    <ul>
+                        <li><strong>Power Rails:</strong> Connect 3.3V rail continuously from top to bottom</li>
+                        <li><strong>Ground Rails:</strong> Connect GND rail continuously from top to bottom</li>
+                        <li><strong>DHT11 Placement:</strong> Place on breadboard with legs spread across columns</li>
+                        <li><strong>Pull-up Resistor:</strong> Connect from DHT DATA pin to 3.3V rail (stabilizes signal)</li>
+                        <li><strong>Water Sensor:</strong> Keep away from DHT11 to avoid interference</li>
+                        <li><strong>Jumper Wires:</strong> Use appropriate lengths (too long = signal noise)</li>
+                        <li><strong>Double Check:</strong> Verify no wires cross power/ground rails unintentionally</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- SECTION 7: Signal Timing -->
+            <div class="section">
+                <h2>Data Read Timing & Signal Flow</h2>
+                <div class="diagram-label">Real-time Operation Timeline</div>
+                <div class="mermaid-container">
+                    <div class="mermaid">
+                        timeline
+                            title Real-time Data Flow (1 Second Cycle)
+                            
+                            T=0.00s : Loop starts
+                                   : Read Water sensor (A0)
+                                   : Convert ADC to height
+                            
+                            T=0.10s : Water reading complete
+                                   : Begin DHT11 read
+                                   : Wait 2 sec for DHT response
+                            
+                            T=2.10s : DHT11 read complete
+                                   : Combine water + DHT data
+                                   : Check alert thresholds
+                            
+                            T=2.50s : Prepare JSON response
+                                   : Calculate statistics
+                                   : Update history buffers
+                            
+                            T=3.00s : Next browser request arrives
+                                   : Send JSON to browser
+                                   : Dashboard updates gauges
+                            
+                            T=3.50s : Sparklines animate
+                                   : Terminal logs event
+                                   : Check for threshold breach
+                            
+                            T=4.00s : Loop repeats
+                                   : Cycle returns to start
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SECTION 8: Voltage Levels -->
+            <div class="section">
+                <h2>Voltage & Logic Levels</h2>
+                <div class="diagram-label">Signal Levels Reference</div>
+                <div class="mermaid-container">
+                    <div class="mermaid">
+                        graph TB
+                            subgraph V["VOLTAGE SPECIFICATIONS"]
+                                V1["USB Input: 5V"]
+                                V2["Regulator Output: 3.3V"]
+                                V3["GPIO High: 3.3V"]
+                                V4["GPIO Low: 0V"]
+                                V5["ADC Range: 0V to 3.3V"]
+                            end
+                            
+                            subgraph SENSORS["SENSOR SIGNAL LEVELS"]
+                                S1["DHT11 Data: Digital (0V or 3.3V)"]
+                                S2["Water Sensor: Analog (0V to 3.3V)"]
+                                S3["ADC Resolution: 10-bit (0-1023)"]
+                            end
+                            
+                            subgraph CALIBRATION["WATER SENSOR CALIBRATION"]
+                                C1["Air/Dry: ~3.0V (ADC ≈ 750)"]
+                                C2["Shallow Water: ~1.5V (ADC ≈ 500)"]
+                                C3["Submerged: ~1.0V (ADC ≈ 350)"]
+                                C4["Height Formula: (DRY-RAW)/(DRY-WET) × 8m"]
+                            end
+                            
+                            style V1 fill:#ff9999
+                            style V2 fill:#ffcc99
+                            style V3 fill:#99ff99
+                            style V4 fill:#cccccc
+                            style V5 fill:#99ffff
+                            style S1 fill:#ffffcc
+                            style S2 fill:#ccffff
+                            style S3 fill:#ffccff
+                            style C1 fill:#ffe6e6
+                            style C2 fill:#fff0e6
+                            style C3 fill:#e6f9ff
+                            style C4 fill:#f0e6ff
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SECTION 9: Error Detection -->
+            <div class="section">
+                <h2>Troubleshooting Circuit Check</h2>
+                <div class="tips">
+                    <h3>🔧 Diagnostic Checklist:</h3>
+                    <ul>
+                        <li>✅ <strong>Blue LED on ESP8266:</strong> Confirms USB power delivery</li>
+                        <li>✅ <strong>Serial Monitor Connection:</strong> Verifies data communication</li>
+                        <li>✅ <strong>Water Sensor 0-1023 Range:</strong> Confirms ADC working</li>
+                        <li>✅ <strong>DHT Temperature Reading:</strong> Confirms digital GPIO functioning</li>
+                        <li>✅ <strong>WiFi IP Address:</strong> Confirms network stack operational</li>
+                        <li>✅ <strong>JSON Output at /data:</strong> Confirms API endpoint responding</li>
+                        <li>❌ <strong>Stuck at 0 or 1023:</strong> Check A0 connection or sensor power</li>
+                        <li>❌ <strong>DHT Read Failed:</strong> Check D4 connection or add pull-up resistor</li>
+                        <li>❌ <strong>No IP Address:</strong> Check WiFi SSID/password, router 2.4GHz</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- SECTION 10: Quick Reference -->
+            <div class="section">
+                <h2>Quick Reference Card</h2>
+                <div class="mermaid-container">
+                    <div class="mermaid">
+                        graph TB
+                            subgraph QR["QUICK REFERENCE"]
+                                Q1["ESP8266 Power: USB 5V"]
+                                Q2["Sensor Power: 3.3V"]
+                                Q3["DHT11 Pin D4 (GPIO2)"]
+                                Q4["Water Pin A0 (Analog)"]
+                                Q5["Serial Baud: 115200"]
+                                Q6["WiFi: 2.4GHz only"]
+                                Q7["Update Rate: 1 Hz"]
+                                Q8["API: /data endpoint"]
+                                Q9["Flood Threshold: 4.0m"]
+                                Q10["Landslide Threshold: 50%"]
+                            end
+                            
+                            style Q1 fill:#ff9999
+                            style Q2 fill:#ffcc99
+                            style Q3 fill:#ffffcc
+                            style Q4 fill:#ccffff
+                            style Q5 fill:#ffccff
+                            style Q6 fill:#e6f9ff
+                            style Q7 fill:#e6ffe6
+                            style Q8 fill:#ffe6f9
+                            style Q9 fill:#ffcccc
+                            style Q10 fill:#ffffcc
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Nepal EWS - Multi-Hazard Early Warning System | Circuit Diagram v1.0</p>
+            <p>Generated for Hackathon Project | May 30, 2026</p>
+            <p><strong>Print Tip:</strong> Use Chrome/Firefox, Print → Save as PDF for high-quality documentation</p>
+        </div>
+    </div>
+    
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+        mermaid.contentLoaded();
+    </script>
+</body>
+</html>

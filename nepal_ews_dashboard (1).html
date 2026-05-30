@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nepal Multi-Hazard Early Warning System</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --neon-green: #00ff88;
+    --neon-amber: #ffb300;
+    --neon-red: #ff2244;
+    --neon-blue: #00cfff;
+    --bg-deep: #050a0e;
+    --bg-card: #0a1520;
+    --bg-card2: #0d1b2a;
+    --border-dim: #1a3050;
+    --border-glow: #00ff8833;
+    --text-muted: #4a7090;
+    --text-dim: #8ab0c8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-deep);
+    font-family: 'Rajdhani', sans-serif;
+    color: #c8dcea;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.04) 2px,
+      rgba(0,0,0,0.04) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Grid noise background */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .content-wrap { position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(90deg, #020c14 0%, #071525 50%, #020c14 100%);
+    border-bottom: 1px solid var(--border-dim);
+    box-shadow: 0 0 40px rgba(0,255,136,0.06);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px;
+  }
+
+  .header-title {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: clamp(12px, 2vw, 20px);
+    letter-spacing: 0.12em;
+    color: #fff;
+    text-shadow: 0 0 20px var(--neon-green), 0 0 40px rgba(0,255,136,0.3);
+  }
+
+  .header-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+
+  .status-badge {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(0,255,136,0.05);
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--neon-green);
+    letter-spacing: 0.08em;
+  }
+
+  .pulse-dot {
+    width: 10px; height: 10px;
+    background: var(--neon-green);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--neon-green);
+    animation: pulse-anim 1.5s infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse-anim {
+    0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 8px var(--neon-green); }
+    50% { opacity:0.4; transform:scale(0.8); box-shadow:0 0 2px var(--neon-green); }
+  }
+
+  .header-right {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+
+  .time-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--neon-blue);
+    text-align: right;
+  }
+
+  /* ── MAIN GRID ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    grid-template-rows: auto auto;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  @media (max-width: 1100px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-dim), transparent);
+  }
+
+  /* ── TOWER CARD ── */
+  .tower-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 700px) { .tower-grid { grid-template-columns: 1fr; } }
+
+  .tower-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+  }
+
+  .tower-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+    opacity: 0.6;
+  }
+
+  .tower-card.alert {
+    border-color: var(--neon-red) !important;
+    box-shadow: 0 0 30px rgba(255,34,68,0.3), inset 0 0 30px rgba(255,34,68,0.05) !important;
+    background: #120508 !important;
+    animation: card-flash 1s infinite;
+  }
+
+  .tower-card.alert::before { background: linear-gradient(90deg, transparent, var(--neon-red), transparent); opacity:1; }
+
+  @keyframes card-flash {
+    0%,100% { box-shadow: 0 0 30px rgba(255,34,68,0.3), inset 0 0 30px rgba(255,34,68,0.05); }
+    50% { box-shadow: 0 0 60px rgba(255,34,68,0.6), inset 0 0 60px rgba(255,34,68,0.1); }
+  }
+
+  .tower-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.2em;
+  }
+
+  .tower-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #e0f0ff;
+    margin: 4px 0 2px;
+    line-height: 1.2;
+  }
+
+  .tower-role {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    font-style: italic;
+  }
+
+  .metric-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .metric-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .metric-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--neon-green);
+    transition: color 0.3s;
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .metric-value.warn { color: var(--neon-amber); }
+  .metric-value.crit { color: var(--neon-red); }
+
+  .metric-unit {
+    font-size: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text-muted);
+    margin-left: 3px;
+  }
+
+  /* Progress bar */
+  .bar-wrap {
+    background: rgba(255,255,255,0.05);
+    border-radius: 2px;
+    height: 4px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease, background 0.3s;
+  }
+
+  .status-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-top: 10px;
+    border: 1px solid;
+  }
+
+  .status-tag.ok { color: var(--neon-green); border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.06); }
+  .status-tag.warn { color: var(--neon-amber); border-color: rgba(255,179,0,0.3); background: rgba(255,179,0,0.06); }
+  .status-tag.crit { color: var(--neon-red); border-color: rgba(255,34,68,0.4); background: rgba(255,34,68,0.08); animation: blink-tag 0.6s infinite; }
+
+  @keyframes blink-tag { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .signal-bars { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
+  .signal-bars span {
+    width: 3px;
+    background: var(--neon-green);
+    border-radius: 1px;
+    opacity: 0.3;
+  }
+  .signal-bars span.active { opacity: 1; box-shadow: 0 0 4px var(--neon-green); }
+
+  /* ── LIVE DATA PANEL ── */
+  .live-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .gauge-row { display: flex; gap: 12px; }
+
+  .gauge-box {
+    flex: 1;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .gauge-icon { font-size: 22px; margin-bottom: 6px; }
+  .gauge-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1;
+    text-shadow: 0 0 15px currentColor;
+  }
+  .gauge-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    margin-top: 4px;
+  }
+
+  /* ── MAP ── */
+  .map-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .map-header {
+    background: rgba(0,0,0,0.4);
+    border-bottom: 1px solid var(--border-dim);
+    padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .map-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--neon-blue);
+    letter-spacing: 0.15em;
+  }
+
+  .map-body {
+    position: relative;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(0,60,30,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 60%, rgba(0,30,60,0.15) 0%, transparent 60%),
+      linear-gradient(170deg, #071018 0%, #050d15 50%, #061218 100%);
+    height: 280px;
+    overflow: hidden;
+  }
+
+  /* Topographic lines */
+  .map-body::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      repeating-radial-gradient(ellipse at 40% 45%, transparent 30px, rgba(0,255,136,0.03) 31px, transparent 32px),
+      repeating-radial-gradient(ellipse at 40% 45%, transparent 50px, rgba(0,255,136,0.02) 51px, transparent 52px),
+      repeating-radial-gradient(ellipse at 40% 45%, transparent 70px, rgba(0,255,136,0.015) 71px, transparent 72px),
+      repeating-radial-gradient(ellipse at 40% 45%, transparent 90px, rgba(0,255,136,0.01) 91px, transparent 92px);
+    pointer-events: none;
+  }
+
+  /* River SVG path */
+  .river-svg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+  }
+
+  .map-pin {
+    position: absolute;
+    cursor: pointer;
+    transform: translate(-50%, -100%);
+    transition: all 0.3s;
+    z-index: 10;
+  }
+
+  .map-pin-icon {
+    width: 28px; height: 34px;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .map-pin-body {
+    width: 20px; height: 20px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    background: var(--neon-green);
+    box-shadow: 0 0 12px var(--neon-green), 0 0 24px rgba(0,255,136,0.4);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+
+  .map-pin-body.alert {
+    background: var(--neon-red);
+    box-shadow: 0 0 12px var(--neon-red), 0 0 24px rgba(255,34,68,0.5);
+    animation: pin-blink 0.5s infinite;
+  }
+
+  @keyframes pin-blink {
+    0%,100%{opacity:1} 50%{opacity:0.3}
+  }
+
+  .map-pin-body i {
+    transform: rotate(45deg);
+    font-size: 8px;
+    color: #000;
+  }
+
+  .map-pin-label {
+    position: absolute;
+    bottom: -18px;
+    left: 50%; transform: translateX(-50%);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    color: var(--neon-green);
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 6px var(--neon-green);
+    transition: color 0.3s;
+  }
+
+  .map-pin-label.alert { color: var(--neon-red); text-shadow: 0 0 6px var(--neon-red); }
+
+  /* ── IP CONFIG ── */
+  .config-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 14px;
+    margin-top: 12px;
+  }
+
+  .config-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .config-input-row { display: flex; gap: 8px; }
+
+  .config-input {
+    flex: 1;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--border-dim);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--neon-green);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .config-input:focus { border-color: var(--neon-green); box-shadow: 0 0 8px rgba(0,255,136,0.15); }
+
+  .btn-update {
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.3);
+    border-radius: 4px;
+    padding: 8px 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--neon-green);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-update:hover { background: rgba(0,255,136,0.2); box-shadow: 0 0 12px rgba(0,255,136,0.2); }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 700px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .stat-icon { font-size: 18px; margin-bottom: 4px; }
+  .stat-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--neon-green);
+    text-shadow: 0 0 10px var(--neon-green);
+  }
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    margin-top: 2px;
+  }
+
+  /* ── TERMINAL ── */
+  .terminal {
+    background: #010608;
+    border: 1px solid #0a2030;
+    border-radius: 8px;
+    overflow: hidden;
+    grid-column: 1 / -1;
+  }
+
+  .term-header {
+    background: #020d14;
+    border-bottom: 1px solid #0a2030;
+    padding: 8px 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .term-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .term-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #3a6070;
+    letter-spacing: 0.15em;
+    margin-left: 6px;
+  }
+
+  .term-body {
+    padding: 14px 18px;
+    height: 180px;
+    overflow-y: auto;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    scroll-behavior: smooth;
+  }
+
+  .term-body::-webkit-scrollbar { width: 4px; }
+  .term-body::-webkit-scrollbar-track { background: transparent; }
+  .term-body::-webkit-scrollbar-thumb { background: #0a2030; border-radius: 2px; }
+
+  .log-line { display: flex; gap: 10px; align-items: baseline; }
+  .log-time { color: #2a5060; flex-shrink: 0; }
+  .log-info { color: #00a060; }
+  .log-warn { color: var(--neon-amber); }
+  .log-crit { color: var(--neon-red); font-weight: bold; text-shadow: 0 0 8px var(--neon-red); animation: crit-glow 1s infinite; }
+  .log-success { color: #00ff88; }
+  .log-gps { color: var(--neon-blue); }
+
+  @keyframes crit-glow { 0%,100%{text-shadow: 0 0 8px var(--neon-red)} 50%{text-shadow: 0 0 20px var(--neon-red)} }
+
+  .cursor { display: inline-block; width: 8px; height: 14px; background: var(--neon-green); animation: blink-cur 1s infinite; vertical-align: middle; margin-left: 2px; }
+  @keyframes blink-cur { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+
+  /* ── ALERT MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 10000;
+    display: none;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal-box {
+    background: #0a0005;
+    border: 2px solid var(--neon-red);
+    border-radius: 12px;
+    padding: 40px 50px;
+    text-align: center;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 0 60px rgba(255,34,68,0.4), 0 0 120px rgba(255,34,68,0.15);
+    animation: modal-shake 0.5s ease-in-out;
+  }
+
+  @keyframes modal-shake {
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)}
+  }
+
+  .modal-warning-icon {
+    font-size: 64px;
+    color: var(--neon-red);
+    text-shadow: 0 0 30px var(--neon-red);
+    animation: pulse-anim 0.8s infinite;
+    display: block;
+    margin-bottom: 16px;
+  }
+
+  .modal-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(16px, 3vw, 24px);
+    font-weight: 900;
+    color: var(--neon-red);
+    text-shadow: 0 0 20px var(--neon-red);
+    letter-spacing: 0.05em;
+    line-height: 1.3;
+    margin-bottom: 10px;
+  }
+
+  .modal-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: #ff6688;
+    margin-bottom: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  .modal-detail {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #aa3344;
+    background: rgba(255,34,68,0.05);
+    border: 1px solid rgba(255,34,68,0.2);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: left;
+    line-height: 2;
+    margin-bottom: 20px;
+  }
+
+  .btn-dismiss {
+    background: rgba(255,34,68,0.15);
+    border: 1px solid var(--neon-red);
+    border-radius: 6px;
+    padding: 10px 28px;
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    color: var(--neon-red);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.1em;
+  }
+
+  .btn-dismiss:hover { background: rgba(255,34,68,0.3); box-shadow: 0 0 20px rgba(255,34,68,0.3); }
+
+  /* ── EMERGENCY FLASH ── */
+  .emergency-flash {
+    position: fixed; inset: 0; z-index: 9998;
+    background: rgba(60,0,10,0.0);
+    pointer-events: none;
+    transition: background 0.2s;
+  }
+
+  .emergency-flash.active {
+    animation: bg-flash 1s infinite;
+  }
+
+  @keyframes bg-flash {
+    0%,100%{background:rgba(60,0,10,0.0)} 50%{background:rgba(80,0,20,0.35)}
+  }
+
+  /* ── SPARKLINE ── */
+  .sparkline-canvas { width: 100%; height: 36px; display: block; margin-top: 6px; }
+
+  /* ── CHART PANEL ── */
+  .chart-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .chart-canvas { width: 100%; height: 100px; display: block; }
+
+  /* ── MINI SIREN ── */
+  .siren-indicator {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border: 1px solid var(--border-dim);
+    border-radius: 20px;
+  }
+
+  .siren-light {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #1a3040;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+
+  .siren-light.active {
+    background: var(--neon-red);
+    box-shadow: 0 0 8px var(--neon-red);
+    animation: pulse-anim 0.4s infinite;
+  }
+
+  /* Tooltip for map pins */
+  .pin-tooltip {
+    position: absolute;
+    background: rgba(5,15,25,0.95);
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #8ab0c8;
+    pointer-events: none;
+    z-index: 20;
+    white-space: nowrap;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .map-pin:hover .pin-tooltip { display: block; bottom: 110%; left: 50%; transform: translateX(-50%); }
+</style>
+</head>
+<body>
+
+<div class="emergency-flash" id="emergencyFlash"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="alertModal">
+  <div class="modal-box">
+    <i class="fas fa-exclamation-triangle modal-warning-icon"></i>
+    <div class="modal-title">⚠ CRITICAL HAZARD PREDICTED<br>LOCAL SIRENS ACTIVATED</div>
+    <div class="modal-sub" id="modalSubtext">Threshold breach detected — Emergency protocol engaged</div>
+    <div class="modal-detail" id="modalDetail">
+      [NODE] Checking hardware telemetry...<br>
+      [GPS] 27.6588° N, 85.5209° E — Roshi River Corridor<br>
+      [API] Dispatching SOS to Nepal Emergency Rescue Gateway...<br>
+      [APF] Alert forwarded to Armed Police Force Command HQ
+    </div>
+    <button class="btn-dismiss" onclick="dismissAlert()">◼ ACKNOWLEDGE &amp; SILENCE</button>
+  </div>
+</div>
+
+<div class="content-wrap">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div>
+      <div class="header-title">
+        <i class="fas fa-shield-alt" style="color:var(--neon-green); margin-right:10px; font-size:0.8em;"></i>
+        NEPAL MULTI-HAZARD EARLY WARNING SYSTEM
+      </div>
+      <div class="header-sub">ROSHI RIVER CORRIDOR · LORAWAN MESH NETWORK · 4-NODE TOPOLOGY v2.1</div>
+    </div>
+    <div class="header-right">
+      <div class="siren-indicator">
+        <div class="siren-light" id="sirenLight"></div>
+        SIREN
+      </div>
+      <div class="status-badge">
+        <div class="pulse-dot" id="networkDot"></div>
+        <div>
+          <div>NETWORK: <span id="networkStatus">ACTIVE</span></div>
+          <div style="color:var(--text-muted); font-size:10px; margin-top:1px;">4 NODES ONLINE · LoRa 868 MHz</div>
+        </div>
+      </div>
+      <div class="time-display">
+        <div id="liveTime" style="font-size:15px;font-weight:bold;"></div>
+        <div style="font-size:9px;color:var(--text-muted);letter-spacing:0.1em;" id="liveDate"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- STATS ROW -->
+  <div style="padding:12px 16px 0;">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon" style="color:var(--neon-blue)"><i class="fas fa-broadcast-tower"></i></div>
+        <div class="stat-val" id="statNodes">4/4</div>
+        <div class="stat-label">NODES ACTIVE</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color:var(--neon-green)"><i class="fas fa-water"></i></div>
+        <div class="stat-val" id="statWater">—</div>
+        <div class="stat-label">WATER LVL (m)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color:var(--neon-amber)"><i class="fas fa-mountain"></i></div>
+        <div class="stat-val" id="statSoil">—</div>
+        <div class="stat-label">SOIL MOIST (%)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color:#cc44ff"><i class="fas fa-heartbeat"></i></div>
+        <div class="stat-val" id="statAlerts">0</div>
+        <div class="stat-label">ALERTS TODAY</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT: Towers -->
+    <div>
+      <div class="section-label"><i class="fas fa-broadcast-tower" style="color:var(--neon-blue)"></i> LORAWAN NODE STATUS — ROSHI CORRIDOR</div>
+
+      <!-- Live gauges -->
+      <div class="live-panel">
+        <div class="section-label" style="margin-bottom:10px;"><i class="fas fa-satellite-dish" style="color:var(--neon-green)"></i> LIVE ESP8266 TELEMETRY · NODE-01 UPSTREAM FEED</div>
+        <div class="gauge-row">
+          <div class="gauge-box">
+            <div class="gauge-icon" style="color:var(--neon-blue)"><i class="fas fa-water"></i></div>
+            <div class="gauge-val" id="gaugeWater" style="color:var(--neon-blue)">—</div>
+            <div class="gauge-label">WATER LEVEL (METERS)</div>
+            <canvas class="sparkline-canvas" id="sparkWater"></canvas>
+          </div>
+          <div class="gauge-box">
+            <div class="gauge-icon" style="color:var(--neon-amber)"><i class="fas fa-seedling"></i></div>
+            <div class="gauge-val" id="gaugeSoil" style="color:var(--neon-amber)">—</div>
+            <div class="gauge-label">SOIL MOISTURE (%)</div>
+            <canvas class="sparkline-canvas" id="sparkSoil"></canvas>
+          </div>
+          <div class="gauge-box">
+            <div class="gauge-icon" style="color:#cc44ff"><i class="fas fa-wifi"></i></div>
+            <div class="gauge-val" id="gaugeRSSI" style="color:#cc44ff">-67</div>
+            <div class="gauge-label">RSSI (dBm)</div>
+            <canvas class="sparkline-canvas" id="sparkRSSI"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tower Cards -->
+      <div class="tower-grid">
+
+        <!-- T01 -->
+        <div class="tower-card" id="card0">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div class="tower-num">NODE · T-01 · ESP8266-RA08H</div>
+              <div class="tower-name">Upper Catchment</div>
+              <div class="tower-role">Scout · Upstream Headwaters</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="signal-bars">
+                <span style="height:4px;" class="active"></span>
+                <span style="height:7px;" class="active"></span>
+                <span style="height:10px;" class="active"></span>
+                <span style="height:13px;" class="active"></span>
+              </div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-muted);margin-top:3px;">-67 dBm</div>
+            </div>
+          </div>
+
+          <div class="metric-row" style="margin-top:8px;">
+            <div class="metric-label"><i class="fas fa-water"></i> WATER LEVEL</div>
+            <div>
+              <span class="metric-value" id="t1water">—</span>
+              <span class="metric-unit">m</span>
+            </div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-fill" id="t1wbar" style="width:0%;background:var(--neon-blue);"></div>
+          </div>
+
+          <div class="metric-row" style="margin-top:8px;">
+            <div class="metric-label"><i class="fas fa-seedling"></i> SOIL MOISTURE</div>
+            <div>
+              <span class="metric-value" id="t1soil" style="color:var(--neon-amber);">—</span>
+              <span class="metric-unit">%</span>
+            </div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-fill" id="t1sbar" style="width:0%;background:var(--neon-amber);"></div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+            <div class="status-tag ok" id="t1status"><i class="fas fa-check-circle"></i> NOMINAL</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-muted);">27.7013°N 85.6201°E</div>
+          </div>
+        </div>
+
+        <!-- T02 -->
+        <div class="tower-card" id="card1">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div class="tower-num">NODE · T-02 · ESP8266-RA08H</div>
+              <div class="tower-name">Midstream Inflow</div>
+              <div class="tower-role">Khopasi · Hydro Plant Zone</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="signal-bars">
+                <span style="height:4px;" class="active"></span>
+                <span style="height:7px;" class="active"></span>
+                <span style="height:10px;" class="active"></span>
+                <span style="height:13px;"></span>
+              </div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-muted);margin-top:3px;">-72 dBm</div>
+            </div>
+          </div>
+
+          <div class="metric-row" style="margin-top:8px;">
+            <div class="metric-label"><i class="fas fa-tint"></i> FLOW RATE</div>
+            <div>
+              <span class="metric-value" id="t2flow" style="color:var(--neon-blue);">—</span>
+              <span class="metric-unit">m³/s</span>
+            </div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-fill" id="t2fbar" style="width:35%;background:var(--neon-blue);"></div>
+          </div>
+
+          <div class="metric-row" style="margin-top:8px;">
+            <div class="metric-label"><i class="fas fa-thermometer-half"></i> TURBIDITY</div>
+            <div>
+              <span class="metric-value" id="t2turb" style="color:#88ddff;">—</span>
+              <span class="metric-unit">NTU</span>
+            </div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-fill" id="t2tbar" style="width:28%;background:#88ddff;"></div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+            <div class="status-tag ok" id="t2status"><i class="fas fa-check-circle"></i> NOMINAL</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-muted);">27.6610°N 85.5840°E</div>
+          </div>
+        </div>
+
+        <!-- T03 -->
+        <div class="tower-card" id="card2">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div class="tower-num">NODE · T-03 · ESP8266-RA08H</div>
+              <div class="tower-name">Panauti Bazaar</div>
+              <div class="tower-role">Triveni Ghat · High-Risk Urban</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="signal-bars">
+                <span style="height:4px;" class="active"></span>
+                <span style="height:7px;" class="active"></span>
+                <span style="height:10px;"></span>
+                <span style="height:13px;"></span>
+              </div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-muted);margin-top:3px;">-79 dBm</div>
+            </div>
+          </div>
+
+          <div class="metric-row" style="margin-top:8px;">
+            <div class="metric-label"><i class="fas fa-city"></i> INUNDATION RISK</div>
+            <div>
+              <span class="metric-value" id="t3risk" style="color:var(--neon-green);">LOW</span>
+            </div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-fill" id="t3rbar" style="width:15%;background:var(--neon-green);"></div>
+          </div>
+
+          <div class="metric-row" style="margin-top:8px;">
+            <div class="metric-label"><i class="fas fa-people-arrows"></i> EVACUATION ZONES</div>
+            <div>
+              <span class="metric-value" id="t3evac" style="color:#88ffcc;">3</span>
+              <span class="metric-unit">active</span>
+            </div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-fill" style="width:30%;background:#88ffcc;"></div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+            <div class="status-tag ok" id="t3status"><i class="fas fa-check-circle"></i> MONITORING</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-muted);">27.5931°N 85.5209°E</div>
+          </div>
+        </div>
+
+        <!-- T04 -->
+        <div class="tower-card" id="card3">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div class="tower-num">NODE · T-04 · ESP8266-RA08H</div>
+              <div class="tower-name">Bhumidanda Exit</div>
+              <div class="tower-role">Downstream · Sun Koshi Corridor</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="signal-bars">
+                <span style="height:4px;" class="active"></span>
+                <span style="height:7px;" class="active"></span>
+                <span style="height:10px;" class="active"></span>
+                <span style="height:13px;" class="active"></span>
+              </div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-muted);margin-top:3px;">-65 dBm</div>
+            </div>
+          </div>
+
+          <div class="metric-row" style="margin-top:8px;">
+            <div class="metric-label"><i class="fas fa-seedling"></i> SOIL MOISTURE</div>
+            <div>
+              <span class="metric-value" id="t4soil" style="color:var(--neon-amber);">—</span>
+              <span class="metric-unit">%</span>
+            </div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-fill" id="t4sbar" style="width:0%;background:var(--neon-amber);"></div>
+          </div>
+
+          <div class="metric-row" style="margin-top:8px;">
+            <div class="metric-label"><i class="fas fa-angle-double-down"></i> SLOPE STABILITY</div>
+            <div>
+              <span class="metric-value" id="t4slope" style="color:var(--neon-green);">STABLE</span>
+            </div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-fill" id="t4slbar" style="width:20%;background:var(--neon-green);"></div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+            <div class="status-tag ok" id="t4status"><i class="fas fa-check-circle"></i> NOMINAL</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-muted);">27.5244°N 85.4900°E</div>
+          </div>
+        </div>
+
+      </div><!-- /tower-grid -->
+
+      <!-- Chart -->
+      <div class="chart-panel" style="margin-top:12px;">
+        <div class="section-label"><i class="fas fa-chart-line" style="color:var(--neon-green)"></i> 60-SECOND TELEMETRY HISTORY</div>
+        <canvas class="chart-canvas" id="historyChart" height="100"></canvas>
+      </div>
+
+    </div><!-- /left -->
+
+    <!-- RIGHT: Map + Config -->
+    <div>
+      <div class="section-label"><i class="fas fa-map-marked-alt" style="color:var(--neon-amber)"></i> ROSHI RIVER TACTICAL MAP</div>
+
+      <div class="map-container">
+        <div class="map-header">
+          <div class="map-title"><i class="fas fa-crosshairs"></i> &nbsp;ROSHI BASIN · 27.59–27.70°N · 85.49–85.62°E</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-muted);">WGS84 · UTM 45N</div>
+        </div>
+        <div class="map-body" id="mapBody">
+
+          <!-- Terrain labels -->
+          <div style="position:absolute;top:10px;left:10px;font-family:'Share Tech Mono',monospace;font-size:8px;color:rgba(0,255,136,0.25);letter-spacing:0.1em;">HIMALAYAS</div>
+          <div style="position:absolute;bottom:10px;right:10px;font-family:'Share Tech Mono',monospace;font-size:8px;color:rgba(0,200,255,0.25);letter-spacing:0.1em;">SUN KOSHI →</div>
+
+          <!-- River SVG -->
+          <svg class="river-svg" viewBox="0 0 380 280" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="riverGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#003870" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#005090" stop-opacity="0.4"/>
+              </linearGradient>
+              <filter id="riverBlur"><feGaussianBlur stdDeviation="1.5"/></filter>
+            </defs>
+            <!-- Main river path -->
+            <path d="M 60 30 C 80 60, 100 80, 110 100 C 120 120, 130 135, 150 150 C 170 165, 200 175, 220 190 C 240 205, 270 215, 300 230 C 320 240, 340 250, 360 260"
+                  stroke="url(#riverGrad)" stroke-width="6" fill="none" filter="url(#riverBlur)" opacity="0.8"/>
+            <!-- River highlight -->
+            <path d="M 60 30 C 80 60, 100 80, 110 100 C 120 120, 130 135, 150 150 C 170 165, 200 175, 220 190 C 240 205, 270 215, 300 230 C 320 240, 340 250, 360 260"
+                  stroke="#0080cc" stroke-width="2" fill="none" opacity="0.4"/>
+            <!-- Tributaries -->
+            <path d="M 20 80 C 50 85, 80 90, 110 100" stroke="#004488" stroke-width="3" fill="none" opacity="0.5" filter="url(#riverBlur)"/>
+            <path d="M 40 150 C 90 145, 130 145, 150 150" stroke="#004488" stroke-width="2" fill="none" opacity="0.4" filter="url(#riverBlur)"/>
+            <path d="M 180 100 C 185 120, 185 140, 150 150" stroke="#004488" stroke-width="2" fill="none" opacity="0.35" filter="url(#riverBlur)"/>
+            <!-- Contour lines -->
+            <ellipse cx="90" cy="70" rx="50" ry="30" fill="none" stroke="rgba(0,255,136,0.08)" stroke-width="1"/>
+            <ellipse cx="90" cy="70" rx="70" ry="45" fill="none" stroke="rgba(0,255,136,0.05)" stroke-width="1"/>
+            <ellipse cx="200" cy="180" rx="60" ry="35" fill="none" stroke="rgba(0,255,136,0.06)" stroke-width="1"/>
+            <!-- Settlement dots -->
+            <circle cx="148" cy="148" r="8" fill="rgba(255,179,0,0.08)" stroke="rgba(255,179,0,0.2)" stroke-width="1"/>
+            <circle cx="148" cy="148" r="4" fill="rgba(255,179,0,0.15)"/>
+            <text x="148" y="140" text-anchor="middle" font-family="monospace" font-size="6" fill="rgba(255,179,0,0.5)" letter-spacing="1">PANAUTI</text>
+          </svg>
+
+          <!-- Map Pins -->
+          <!-- T01: Upper Catchment ~30% from left, 15% from top -->
+          <div class="map-pin" style="left:29%;top:22%;" id="pin0">
+            <div class="pin-tooltip">
+              T-01 · UPPER CATCHMENT<br>
+              27.7013°N 85.6201°E<br>
+              Water Level: <span id="pinW0">—</span> m
+            </div>
+            <div class="map-pin-icon">
+              <div class="map-pin-body" id="pinbody0"><i class="fas fa-broadcast-tower"></i></div>
+            </div>
+            <div class="map-pin-label" id="pinlabel0">T-01 UPSTREAM</div>
+          </div>
+
+          <!-- T02: Khopasi ~42%, 42% -->
+          <div class="map-pin" style="left:41%;top:45%;" id="pin1">
+            <div class="pin-tooltip">
+              T-02 · KHOPASI / HYDRO<br>
+              27.6610°N 85.5840°E<br>
+              Flow Rate: <span id="pinW1">—</span> m³/s
+            </div>
+            <div class="map-pin-icon">
+              <div class="map-pin-body" id="pinbody1"><i class="fas fa-broadcast-tower"></i></div>
+            </div>
+            <div class="map-pin-label" id="pinlabel1">T-02 HYDRO</div>
+          </div>
+
+          <!-- T03: Panauti ~58%, 60% -->
+          <div class="map-pin" style="left:57%;top:62%;" id="pin2">
+            <div class="pin-tooltip">
+              T-03 · PANAUTI BAZAAR<br>
+              27.5931°N 85.5209°E<br>
+              HIGH-RISK URBAN ZONE
+            </div>
+            <div class="map-pin-icon">
+              <div class="map-pin-body" id="pinbody2"><i class="fas fa-broadcast-tower"></i></div>
+            </div>
+            <div class="map-pin-label" id="pinlabel2">T-03 PANAUTI</div>
+          </div>
+
+          <!-- T04: Bhumidanda ~80%, 80% -->
+          <div class="map-pin" style="left:79%;top:79%;" id="pin3">
+            <div class="pin-tooltip">
+              T-04 · BHUMIDANDA EXIT<br>
+              27.5244°N 85.4900°E<br>
+              Soil Moisture: <span id="pinS3">—</span>%
+            </div>
+            <div class="map-pin-icon">
+              <div class="map-pin-body" id="pinbody3"><i class="fas fa-broadcast-tower"></i></div>
+            </div>
+            <div class="map-pin-label" id="pinlabel3">T-04 DOWNSTREAM</div>
+          </div>
+
+          <!-- Map legend -->
+          <div style="position:absolute;bottom:8px;left:8px;font-family:'Share Tech Mono',monospace;font-size:8px;color:rgba(0,200,255,0.5);">
+            <div style="display:flex;align-items:center;gap:4px;"><div style="width:16px;height:2px;background:#0080cc;opacity:0.7;"></div> ROSHI RIVER</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:2px;"><div style="width:8px;height:8px;border-radius:50%;background:var(--neon-green);opacity:0.7;"></div> SENSOR NODE</div>
+          </div>
+
+          <!-- Scale bar -->
+          <div style="position:absolute;bottom:8px;right:8px;font-family:'Share Tech Mono',monospace;font-size:7px;color:rgba(255,255,255,0.3);">
+            <div style="width:40px;height:1px;background:rgba(255,255,255,0.3);margin-bottom:2px;"></div>
+            ~5 km
+          </div>
+        </div>
+      </div>
+
+      <!-- IP Config -->
+      <div class="config-panel">
+        <div class="config-label"><i class="fas fa-network-wired"></i> &nbsp;ESP8266 GATEWAY IP CONFIGURATION</div>
+        <div class="config-input-row">
+          <input class="config-input" type="text" id="ipInput" placeholder="192.168.X.X" value="192.168.1.100">
+          <button class="btn-update" onclick="updateIP()"><i class="fas fa-sync-alt"></i> APPLY</button>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:6px;">
+          ENDPOINT: <span id="endpointDisplay" style="color:var(--neon-green);">http://192.168.1.100/data</span>
+        </div>
+      </div>
+
+      <!-- Threshold Config -->
+      <div class="config-panel" style="margin-top:10px;">
+        <div class="config-label"><i class="fas fa-sliders-h"></i> &nbsp;ALERT THRESHOLDS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-muted);margin-bottom:4px;">FLOOD THRESHOLD (m)</div>
+            <input class="config-input" type="number" id="floodThresh" value="4.0" step="0.1" style="width:100%;padding:6px 10px;font-size:13px;">
+          </div>
+          <div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-muted);margin-bottom:4px;">LANDSLIDE THRESH (%)</div>
+            <input class="config-input" type="number" id="landslideThresh" value="50" step="1" style="width:100%;padding:6px 10px;font-size:13px;">
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /right -->
+
+    <!-- TERMINAL -->
+    <div class="terminal">
+      <div class="term-header">
+        <div class="term-dot" style="background:#ff5f56;"></div>
+        <div class="term-dot" style="background:#ffbd2e;"></div>
+        <div class="term-dot" style="background:#27c93f;"></div>
+        <div class="term-title">▶ NEPAL-EWS RESCUE TERMINAL · EMERGENCY COMMAND SHELL v3.1.4</div>
+        <div style="margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:9px;color:#1a4060;">
+          <i class="fas fa-lock" style="margin-right:4px;"></i>SECURE CHANNEL · AES-256
+        </div>
+      </div>
+      <div class="term-body" id="termBody">
+        <div class="log-line">
+          <span class="log-time">[BOOT]</span>
+          <span class="log-info">Nepal EWS v3.1.4 initializing... All subsystems nominal.</span>
+        </div>
+        <span class="cursor"></span>
+      </div>
+    </div>
+
+  </div><!-- /main-grid -->
+</div><!-- /content-wrap -->
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG — Edit this IP to match your ESP8266
+// ═══════════════════════════════════════════════
+const ESP_BASE_IP = "192.168.1.100";
+const ESP_ENDPOINT = "/data";
+
+let currentIP = ESP_BASE_IP;
+let alertCount = 0;
+let inAlertState = false;
+let audioCtx = null;
+let sirenInterval = null;
+let fetchInterval = null;
+
+const FLOOD_THRESHOLD_DEFAULT = 4.0;
+const LANDSLIDE_THRESHOLD_DEFAULT = 50;
+
+const waterHistory = [];
+const soilHistory  = [];
+const rssiHistory  = [];
+const MAX_HISTORY  = 60;
+
+// ═══════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-US', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const date = now.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}).toUpperCase();
+  document.getElementById('liveTime').textContent = time;
+  document.getElementById('liveDate').textContent = `${date} · NPT (UTC+5:45)`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════════
+// TERMINAL
+// ═══════════════════════════════════════════════
+const term = document.getElementById('termBody');
+let termQueue = [];
+let termTyping = false;
+
+function termLog(msg, type = 'info', delay = 0) {
+  termQueue.push({ msg, type, delay });
+  if (!termTyping) processTermQueue();
+}
+
+function processTermQueue() {
+  if (!termQueue.length) { termTyping = false; return; }
+  termTyping = true;
+  const { msg, type, delay } = termQueue.shift();
+  setTimeout(() => {
+    addTermLine(msg, type);
+    setTimeout(processTermQueue, 80);
+  }, delay);
+}
+
+function addTermLine(msg, type = 'info') {
+  const cursor = term.querySelector('.cursor');
+  if (cursor) cursor.remove();
+
+  const now = new Date().toLocaleTimeString('en-US', {hour12:false});
+  const line = document.createElement('div');
+  line.className = 'log-line';
+
+  const classMap = {
+    info: 'log-info', warn: 'log-warn', crit: 'log-crit', success: 'log-success', gps: 'log-gps'
+  };
+
+  line.innerHTML = `<span class="log-time">[${now}]</span><span class="${classMap[type]||'log-info'}">${msg}</span>`;
+  term.appendChild(line);
+
+  const newCursor = document.createElement('span');
+  newCursor.className = 'cursor';
+  term.appendChild(newCursor);
+  term.scrollTop = term.scrollHeight;
+}
+
+// Idle logs
+const idleLogs = [
+  { msg: '[INFO] Pinging network... Status 200 OK', type: 'info' },
+  { msg: '[LORA] Packet received from T-02 · RSSI: -72 dBm · SNR: 8.2 dB', type: 'info' },
+  { msg: '[MESH] Relay route: T01 → T02 → T03 → T04 · Latency 340ms', type: 'info' },
+  { msg: '[SYSTEM] Telemetry sync complete · 4/4 nodes reporting', type: 'success' },
+  { msg: '[WEATHER] Bagmati Province forecast: HEAVY RAIN · Monitoring elevated', type: 'warn' },
+  { msg: '[API] Heartbeat POST → Nepal DMB gateway · 201 OK', type: 'success' },
+  { msg: '[GPS] Satellite lock confirmed · HDOP: 1.2 · 8 sats', type: 'gps' },
+  { msg: '[LORA] Packet received from T-04 · RSSI: -65 dBm · SNR: 9.1 dB', type: 'info' },
+  { msg: '[INFO] Pinging network... Status 200 OK', type: 'info' },
+  { msg: '[SYSTEM] Memory usage: 34KB / 80KB · CPU: 12% · Temp: 38°C', type: 'info' },
+];
+let idleIdx = 0;
+function scheduleIdleLog() {
+  const interval = 4000 + Math.random() * 3000;
+  setTimeout(() => {
+    if (!inAlertState) {
+      addTermLine(idleLogs[idleIdx % idleLogs.length].msg, idleLogs[idleIdx % idleLogs.length].type);
+      idleIdx++;
+    }
+    scheduleIdleLog();
+  }, interval);
+}
+scheduleIdleLog();
+
+// ═══════════════════════════════════════════════
+// SPARKLINES
+// ═══════════════════════════════════════════════
+function drawSparkline(canvasId, data, color, max) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 200;
+  const H = canvas.offsetHeight || 36;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0,0,W,H);
+  if (data.length < 2) return;
+
+  const step = W / (data.length - 1);
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = i * step;
+    const y = H - (v / max) * H * 0.9 - 2;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.shadowBlur = 6;
+  ctx.shadowColor = color;
+  ctx.stroke();
+
+  // Fill
+  ctx.lineTo((data.length-1)*step, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, color + '44');
+  grad.addColorStop(1, color + '00');
+  ctx.fillStyle = grad;
+  ctx.shadowBlur = 0;
+  ctx.fill();
+}
+
+// ═══════════════════════════════════════════════
+// HISTORY CHART
+// ═══════════════════════════════════════════════
+function drawHistoryChart() {
+  const canvas = document.getElementById('historyChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth;
+  const H = canvas.offsetHeight || 100;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(26,48,80,0.5)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = (H / 4) * i;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  function drawLine(data, color, max, label) {
+    if (data.length < 2) return;
+    const step = W / (MAX_HISTORY - 1);
+    ctx.beginPath();
+    // Pad to full width
+    const padded = Array(MAX_HISTORY - data.length).fill(data[0] || 0).concat(data);
+    padded.forEach((v, i) => {
+      const x = i * step;
+      const y = H - (v / max) * H * 0.85 - 4;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 4;
+    ctx.shadowColor = color;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  drawLine(waterHistory, '#00cfff', 8, 'Water');
+  drawLine(soilHistory.map(v => v/10), '#ffb300', 10, 'Soil');
+
+  // Labels
+  ctx.font = '9px Share Tech Mono, monospace';
+  ctx.fillStyle = '#00cfff88';
+  ctx.fillText('── WATER LEVEL (m)', 8, H - 6);
+  ctx.fillStyle = '#ffb30088';
+  ctx.fillText('── SOIL MOISTURE (%÷10)', 8 + 140, H - 6);
+}
+
+// ═══════════════════════════════════════════════
+// DATA FETCH FROM ESP8266
+// ═══════════════════════════════════════════════
+function getFloodThreshold() {
+  return parseFloat(document.getElementById('floodThresh').value) || FLOOD_THRESHOLD_DEFAULT;
+}
+function getLandslideThreshold() {
+  return parseFloat(document.getElementById('landslideThresh').value) || LANDSLIDE_THRESHOLD_DEFAULT;
+}
+
+async function fetchESP8266() {
+  const url = `http://${currentIP}${ESP_ENDPOINT}`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(1500) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    handleData(data.water_level, data.soil_moisture);
+    setNetworkStatus(true);
+  } catch (e) {
+    setNetworkStatus(false);
+    // Demo fallback: simulate realistic data
+    simulateData();
+  }
+}
+
+// Simulated demo data when ESP not reachable
+let simTime = 0;
+function simulateData() {
+  simTime += 0.05;
+  const water = parseFloat((2.2 + Math.sin(simTime * 0.3) * 0.6 + Math.random() * 0.15).toFixed(2));
+  const soil  = Math.round(72 + Math.sin(simTime * 0.2) * 12 + (Math.random() - 0.5) * 4);
+  handleData(water, soil);
+}
+
+function handleData(waterLevel, soilMoisture) {
+  const wl = parseFloat(waterLevel);
+  const sm = parseFloat(soilMoisture);
+
+  // History
+  waterHistory.push(wl); if (waterHistory.length > MAX_HISTORY) waterHistory.shift();
+  soilHistory.push(sm);  if (soilHistory.length > MAX_HISTORY) soilHistory.shift();
+  const rssi = -67 + Math.round((Math.random()-0.5)*6);
+  rssiHistory.push(Math.abs(rssi)); if (rssiHistory.length > MAX_HISTORY) rssiHistory.shift();
+
+  // Live gauges
+  const FLOOD_T = getFloodThreshold();
+  const LAND_T  = getLandslideThreshold();
+
+  const wColor = wl > FLOOD_T ? 'var(--neon-red)' : wl > FLOOD_T * 0.7 ? 'var(--neon-amber)' : '#00cfff';
+  const sColor = sm < LAND_T ? 'var(--neon-red)' : sm < LAND_T * 1.2 ? 'var(--neon-amber)' : 'var(--neon-amber)';
+
+  document.getElementById('gaugeWater').textContent = wl.toFixed(2);
+  document.getElementById('gaugeWater').style.color = wColor;
+  document.getElementById('gaugeSoil').textContent = sm.toFixed(0);
+  document.getElementById('gaugeSoil').style.color  = sColor;
+  document.getElementById('gaugeRSSI').textContent = rssi;
+
+  // Stats row
+  document.getElementById('statWater').textContent = wl.toFixed(2);
+  document.getElementById('statWater').style.color = wColor;
+  document.getElementById('statSoil').textContent = sm;
+  document.getElementById('statSoil').style.color = sColor;
+
+  // Tower T01 (water)
+  const wPct = Math.min(100, (wl / 8) * 100);
+  document.getElementById('t1water').textContent = wl.toFixed(2);
+  document.getElementById('t1water').className = `metric-value ${wl > FLOOD_T ? 'crit' : wl > FLOOD_T*0.7 ? 'warn' : ''}`;
+  document.getElementById('t1wbar').style.width = wPct + '%';
+  document.getElementById('t1wbar').style.background = wl > FLOOD_T ? 'var(--neon-red)' : wl > FLOOD_T*0.7 ? 'var(--neon-amber)' : 'var(--neon-blue)';
+  document.getElementById('t1soil').textContent = sm.toFixed(0);
+  document.getElementById('t1sbar').style.width = sm + '%';
+
+  // Tower T02 (derived)
+  const flow = parseFloat((wl * 3.2 + Math.random()*0.5).toFixed(1));
+  const turb = Math.round(15 + wl * 8 + Math.random()*5);
+  document.getElementById('t2flow').textContent = flow;
+  document.getElementById('t2flow').className = `metric-value ${flow > 18 ? 'crit' : flow > 12 ? 'warn' : ''}`;
+  document.getElementById('t2fbar').style.width = Math.min(100, flow / 25 * 100) + '%';
+  document.getElementById('t2turb').textContent = turb;
+  document.getElementById('t2tbar').style.width = Math.min(100, turb / 80 * 100) + '%';
+
+  // Tower T03
+  const riskPct = Math.min(100, (wl / FLOOD_T) * 60 + (sm < LAND_T ? 30 : 0));
+  const riskLabel = riskPct > 70 ? 'CRITICAL' : riskPct > 40 ? 'ELEVATED' : 'LOW';
+  const riskColor = riskPct > 70 ? 'var(--neon-red)' : riskPct > 40 ? 'var(--neon-amber)' : 'var(--neon-green)';
+  document.getElementById('t3risk').textContent = riskLabel;
+  document.getElementById('t3risk').style.color = riskColor;
+  document.getElementById('t3rbar').style.width = riskPct + '%';
+  document.getElementById('t3rbar').style.background = riskColor;
+
+  // Tower T04 (soil)
+  const slope = sm < LAND_T ? 'CRITICAL' : sm < LAND_T*1.2 ? 'UNSTABLE' : 'STABLE';
+  const slopeColor = sm < LAND_T ? 'var(--neon-red)' : sm < LAND_T*1.2 ? 'var(--neon-amber)' : 'var(--neon-green)';
+  document.getElementById('t4soil').textContent = sm.toFixed(0);
+  document.getElementById('t4soil').className = `metric-value ${sm < LAND_T ? 'crit' : sm < LAND_T*1.2 ? 'warn' : ''}`;
+  document.getElementById('t4sbar').style.width = sm + '%';
+  document.getElementById('t4sbar').style.background = sm < LAND_T ? 'var(--neon-red)' : sm < LAND_T*1.2 ? 'var(--neon-amber)' : 'var(--neon-amber)';
+  document.getElementById('t4slope').textContent = slope;
+  document.getElementById('t4slope').style.color = slopeColor;
+  document.getElementById('t4slbar').style.width = (100 - sm) + '%';
+  document.getElementById('t4slbar').style.background = slopeColor;
+
+  // Map pin tooltips
+  document.getElementById('pinW0').textContent = wl.toFixed(2);
+  document.getElementById('pinS3').textContent = sm.toFixed(0);
+
+  // Sparklines
+  drawSparkline('sparkWater', waterHistory, '#00cfff', 8);
+  drawSparkline('sparkSoil',  soilHistory.map(v=>v/100), '#ffb300', 1);
+  drawSparkline('sparkRSSI',  rssiHistory, '#cc44ff', 100);
+  drawHistoryChart();
+
+  // ── ALERT EVALUATION ──
+  const floodAlert     = wl > FLOOD_T;
+  const landslideAlert = sm < LAND_T;
+
+  updateCardAndPin(0, floodAlert,     't1status', 'FLOOD DETECTED');
+  updateCardAndPin(1, floodAlert,     't2status', 'FLOOD INFLOW');
+  updateCardAndPin(2, floodAlert || landslideAlert, 't3status', 'HAZARD ZONE');
+  updateCardAndPin(3, landslideAlert, 't4status', 'LANDSLIDE RISK');
+
+  if ((floodAlert || landslideAlert) && !inAlertState) {
+    triggerEmergency(wl, sm, floodAlert, landslideAlert);
+  }
+}
+
+function updateCardAndPin(idx, isAlert, statusId, critLabel) {
+  const card = document.getElementById(`card${idx}`);
+  const pin  = document.getElementById(`pinbody${idx}`);
+  const lbl  = document.getElementById(`pinlabel${idx}`);
+  const tag  = document.getElementById(statusId);
+
+  if (isAlert) {
+    card.classList.add('alert');
+    pin.classList.add('alert');
+    lbl.classList.add('alert');
+    if (tag) { tag.className='status-tag crit'; tag.innerHTML=`<i class="fas fa-exclamation-triangle"></i> ${critLabel}`; }
+  } else {
+    card.classList.remove('alert');
+    pin.classList.remove('alert');
+    lbl.classList.remove('alert');
+    if (tag) {
+      const labels = ['NOMINAL','NOMINAL','MONITORING','NOMINAL'];
+      tag.className='status-tag ok';
+      tag.innerHTML=`<i class="fas fa-check-circle"></i> ${labels[idx]||'OK'}`;
+    }
+  }
+}
+
+function setNetworkStatus(online) {
+  const dot = document.getElementById('networkDot');
+  const txt = document.getElementById('networkStatus');
+  if (online) {
+    dot.style.background = 'var(--neon-green)';
+    dot.style.boxShadow  = '0 0 8px var(--neon-green)';
+    txt.textContent = 'ACTIVE';
+    txt.style.color = 'var(--neon-green)';
+  } else {
+    dot.style.background = 'var(--neon-amber)';
+    dot.style.boxShadow  = '0 0 8px var(--neon-amber)';
+    txt.textContent = 'DEMO MODE';
+    txt.style.color = 'var(--neon-amber)';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// EMERGENCY TRIGGER
+// ═══════════════════════════════════════════════
+function triggerEmergency(wl, sm, isFlood, isLandslide) {
+  inAlertState = true;
+  alertCount++;
+  document.getElementById('statAlerts').textContent = alertCount;
+
+  const hazardType = isFlood && isLandslide ? 'COMPOUND FLOOD + LANDSLIDE'
+                   : isFlood ? 'FLASH FLOOD — TOWER T-01'
+                   : 'LANDSLIDE RISK — TOWER T-04';
+
+  // Flash background
+  document.getElementById('emergencyFlash').classList.add('active');
+
+  // Siren
+  startSiren();
+
+  // Terminal logs
+  termLog('[CRITICAL] ⚠ THRESHOLD BREACHED AT HARDWARE NODE', 'crit', 0);
+  termLog(`[SENSOR] Water Level: ${wl.toFixed(2)}m | Soil Moisture: ${sm}%`, 'crit', 500);
+  termLog(`[HAZARD] Predicted event: ${hazardType}`, 'crit', 1000);
+  termLog('[GPS LINKED] Extracting localized telemetry...', 'gps', 1500);
+  termLog('[GPS] Roshi River Basin · 27.6588°N 85.5209°E · ALT: 847m', 'gps', 2000);
+  termLog('[MESH] Propagating alert to all 4 nodes via LoRa mesh...', 'warn', 2500);
+  termLog('[API OUTBOUND] Executing HTTP POST to Nepal Emergency Rescue Gateway...', 'warn', 3000);
+  termLog('[API] POST https://api.ndrrma.gov.np/v2/sos-alert · Payload: 2.1 KB', 'warn', 3500);
+  termLog('[SUCCESS 201] Automated SOS Payload Dispatched to APF / Nepal Army.', 'success', 4200);
+  termLog('[APF] Armed Police Force Command HQ · Alert acknowledged · ETA: 12 min', 'success', 5000);
+  termLog('[SIREN] Local acoustic sirens activated — Zone A, B, C', 'crit', 5500);
+  termLog('[BROADCAST] Emergency SMS dispatched to 847 registered residents', 'success', 6000);
+
+  // Siren indicator
+  document.getElementById('sirenLight').classList.add('active');
+
+  // Modal
+  const modal = document.getElementById('alertModal');
+  const sub   = document.getElementById('modalSubtext');
+  const detail= document.getElementById('modalDetail');
+
+  sub.textContent = `${hazardType} · Roshi River Basin`;
+  detail.innerHTML = `
+    [NODE] Hardware threshold breached · ${new Date().toLocaleTimeString()}<br>
+    [DATA] Water Level: ${wl.toFixed(2)} m | Soil Moisture: ${sm}%<br>
+    [GPS]  27.6588° N, 85.5209° E · Roshi River Corridor<br>
+    [API]  SOS dispatched → Nepal Emergency Rescue Gateway<br>
+    [APF]  Nepal Army + Armed Police Force alerted<br>
+    [SIREN] Acoustic sirens activated in 3 zones
+  `;
+
+  setTimeout(() => { modal.classList.add('active'); }, 1000);
+}
+
+function dismissAlert() {
+  document.getElementById('alertModal').classList.remove('active');
+  document.getElementById('emergencyFlash').classList.remove('active');
+  document.getElementById('sirenLight').classList.remove('active');
+  stopSiren();
+  inAlertState = false;
+  // Reset cards
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`card${i}`).classList.remove('alert');
+    document.getElementById(`pinbody${i}`).classList.remove('alert');
+    document.getElementById(`pinlabel${i}`).classList.remove('alert');
+  }
+  addTermLine('[OPERATOR] Alert acknowledged and silenced by command operator', 'warn');
+  addTermLine('[SYSTEM] Returning to monitoring mode... Thresholds active', 'info');
+}
+
+// ═══════════════════════════════════════════════
+// WEB AUDIO SIREN
+// ═══════════════════════════════════════════════
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playSirenTone(freq, duration, start) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+    osc.frequency.linearRampToValueAtTime(freq * 1.5, ctx.currentTime + start + duration * 0.5);
+    osc.frequency.linearRampToValueAtTime(freq, ctx.currentTime + start + duration);
+    gain.gain.setValueAtTime(0, ctx.currentTime + start);
+    gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + start + 0.05);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + start + duration - 0.05);
+    osc.start(ctx.currentTime + start);
+    osc.stop(ctx.currentTime + start + duration);
+  } catch(e) {}
+}
+
+function startSiren() {
+  stopSiren();
+  let t = 0;
+  function playLoop() {
+    playSirenTone(440, 0.6, t);
+    playSirenTone(660, 0.6, t + 0.65);
+    t += 1.4;
+  }
+  playLoop();
+  sirenInterval = setInterval(playLoop, 1400);
+}
+
+function stopSiren() {
+  if (sirenInterval) { clearInterval(sirenInterval); sirenInterval = null; }
+}
+
+// ═══════════════════════════════════════════════
+// IP UPDATE
+// ═══════════════════════════════════════════════
+function updateIP() {
+  const newIP = document.getElementById('ipInput').value.trim();
+  if (newIP) {
+    currentIP = newIP;
+    document.getElementById('endpointDisplay').textContent = `http://${newIP}/data`;
+    addTermLine(`[CONFIG] ESP8266 endpoint updated → http://${newIP}/data`, 'warn');
+    addTermLine('[CONFIG] Reconnecting to new gateway...', 'info');
+    if (fetchInterval) { clearInterval(fetchInterval); }
+    fetchESP8266();
+    fetchInterval = setInterval(fetchESP8266, 1000);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+addTermLine('[SYSTEM] LoRaWAN mesh network initialized · 868 MHz band', 'info');
+addTermLine('[LORA] 4 nodes discovered: T-01, T-02, T-03, T-04 · All ONLINE', 'success');
+addTermLine('[SYSTEM] Telemetry stream active · Polling ESP8266 @ 1Hz', 'info');
+
+fetchESP8266();
+fetchInterval = setInterval(fetchESP8266, 1000);
+</script>
+</body>
+</html>
